@@ -122,7 +122,7 @@ sub said {
         $perperline =~ s/&lt;/</sgi;
         $perperline =~ s/^[^<]*//;
       }
-      if ($perperline eq "fail") {
+      if ($perperline eq "fail") 
         $message = $arguments->{who}.": Oj. perper.se verkar ligga nere.";
       }
       else
@@ -160,12 +160,12 @@ sub said {
         $checkerstring =~ s/\xC4/a/sg;
         $checkerstring =~ s/\xC5/a/sg;
         $checkerstring =~ s/\xD6/o/sg;
-        $checkerstring =~ s/Ã¥/a/sg;
-        $checkerstring =~ s/Ã¤/a/sg;
-        $checkerstring =~ s/Ã¶/o/sg;
-        $checkerstring =~ s/Ã…/a/sg;
-        $checkerstring =~ s/Ã„/a/sg;
-        $checkerstring =~ s/Ã–/o/sg;
+        $checkerstring =~ s/å/a/sg;
+        $checkerstring =~ s/ä/a/sg;
+        $checkerstring =~ s/ö/o/sg;
+        $checkerstring =~ s/Å/a/sg;
+        $checkerstring =~ s/Ä/a/sg;
+        $checkerstring =~ s/Ö/o/sg;
         $checkerstring =~ s/0/o/sg;
         $checkerstring =~ s/1/l/sg;
         $checkerstring =~ s/2/z/sg;
