@@ -330,15 +330,13 @@ sub said {
       $isow = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$arguments->{who});
       $ircop = $self->pocoirc->is_operator($arguments->{who});
-      if (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)) {
+      $ign = $self->ignore_nick($arguments->{who});
+      if (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
         $immunity = "true";
       }
       else
       {
         $immunity = "false";
-      }
-      if ($arguments->{who} eq "JuliaBot") {
-        $immunity = "true";
       }
 
       if ($isow == 1) { #ONLY CHANNEL OWNER CAN EXECUTE THESE
@@ -466,15 +464,13 @@ sub said {
             $isow = $self->pocoirc->is_channel_owner($arguments->{channel},$user);
             $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$user);
             $ircop = $self->pocoirc->is_operator($user);
-            if (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)) {
+            $ign = $self->ignore_nick($user);
+            if (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
               $immunity = "1";
             }
             else
             {
               $immunity = "0";
-            }
-            if (lc($user) eq "juliabot") {
-              $immunity = "1";
             }
 
 
@@ -499,7 +495,7 @@ sub said {
             {
               $stat = "hasnotwritten=0";
             }
-            $message = $arguments->{who}.": (".$idnum.") kicked=".$kicked." warned=".$warned." (".$user.") ".$stat." immunity=".$immunity." (OP=".int($isop)." HOP=".int($ishp)." ADM=".int($isad)." OWN=".int($isow)." VO=".int($isv)." IOP=".int($ircop).").";
+            $message = $arguments->{who}.": (".$idnum.") kicked=".$kicked." warned=".$warned." (".$user.") ".$stat." immunity=".$immunity." (OP=".int($isop)." HOP=".int($ishp)." ADM=".int($isad)." OWN=".int($isow)." VO=".int($isv)." IOP=".int($ircop)." IGN=".int($ign).").";
           }
           else
           {
@@ -757,6 +753,6 @@ $bot = SebbeBot->new(
   password    => $channelpassword,
   nick        => 'anna',
   name        => 'Sebastian Nielsen',
-  ignore_list => ['NickServ','ChanServ'],
+  ignore_list => ['NickServ','ChanServ','JuliaBot'],
 );
 $bot->run();
