@@ -276,12 +276,12 @@ sub said {
       if (($msgexpiry < time)||($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
         $msgexpiry = time + 60*60;
         $message = $1;
-        $message =~ s/Ã¤/\xE4/sg;
-        $message =~ s/Ã¥/\xE5/sg;
-        $message =~ s/Ã¶/\xF6/sg;
-        $message =~ s/Ã„/\xC4/sg;
-        $message =~ s/Ã…/\xC5/sg;
-        $message =~ s/Ã–/\xD6/sg;
+        $message =~ s/ä/\xE4/sg;
+        $message =~ s/å/\xE5/sg;
+        $message =~ s/ö/\xF6/sg;
+        $message =~ s/Ä/\xC4/sg;
+        $message =~ s/Å/\xC5/sg;
+        $message =~ s/Ö/\xD6/sg;
         $mailbody = "Hej. En OP med namn ".$arguments->{who}." skickade dig ett ilmeddelande via OPMSG. Meddelandet \xE4r:\n";
         $mailbody = $mailbody . $message."\n\n";
         $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
@@ -622,7 +622,7 @@ sub said {
                 $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
                 $maildate = email_date;
                 $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Kickade ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-                open MAIL, "| sudo -H -u ".$mailsender." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
+                open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
                 $mime->print(\*MAIL);
                 close MAIL;
               }
@@ -708,7 +708,7 @@ sub kicked {
         $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
         $maildate = email_date;
         $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Deoppade ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-        open MAIL, "| sudo -H -u ".$mailsender." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
+        open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
         $mime->print(\*MAIL);
         close MAIL;
       }
