@@ -29,7 +29,7 @@ sub said {
   $arguments = shift;    # Contains the message that the bot heard.
   $ua = LWP::UserAgent->new;
   $message = "";
-  unless ($arguments->{channel} eq "msg") {
+  unless (($arguments->{channel} eq "msg")||($arguments->{who} eq "JuliaBot")||($arguments->{who} eq "ChanServ")||($arguments->{who} eq "NickServ")) {
     if ($armed eq "true") {
       if ($self->pocoirc->is_channel_operator($arguments->{channel},'anna') != 1) {
         $self->say(channel => "msg", who => "ChanServ", body => "OP ".$arguments->{channel});
@@ -41,20 +41,20 @@ sub said {
     }
 
     $nickprefix = "";
-    if ($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1) {
-      $nickprefix = "\~";
-    }
-    if ($self->pocoirc->is_channel_admin($arguments->{channel},$arguments->{who}) == 1) {
-      $nickprefix = "\&";
-    }
-    if ($self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who}) == 1) {
-      $nickprefix = "\@";
+    if ($self->pocoirc->has_channel_voice($arguments->{channel},$arguments->{who}) == 1) {
+      $nickprefix = "\+";
     }
     if ($self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who}) == 1) {
       $nickprefix = "\%";
     }
-    if ($self->pocoirc->has_channel_voice($arguments->{channel},$arguments->{who}) == 1) {
-      $nickprefix = "\+";
+    if ($self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who}) == 1) {
+      $nickprefix = "\@";
+    }
+    if ($self->pocoirc->is_channel_admin($arguments->{channel},$arguments->{who}) == 1) {
+      $nickprefix = "\&";
+    }
+    if ($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1) {
+      $nickprefix = "\~";
     }
 
     push(@log, "<".$nickprefix.$arguments->{who}."> ".$arguments->{body});
@@ -250,7 +250,7 @@ sub said {
 
      $opmessage = "false";
     if ($arguments->{body} eq ".help") {
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch)";
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp)";
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
