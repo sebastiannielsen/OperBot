@@ -63,53 +63,67 @@ sub said {
     }
 
 
-    if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")) {
-      if ($cachedtime < time) {
-        $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=15');
-        $rbody = $response->decoded_content;
-        $rbody =~ s/\n//sgi;
-        $rbody =~ s/\r//sgi;
-        $rbody =~ s/\s//sgi;
-        $rbody =~ s/\[\{\"id\":\"(.*)\}\]/$1/sgi;
-        @coindata = split(/\},\{\"id\":\"/, $rbody);
-        foreach $coin (@coindata) {
-          if (($coin =~ m/^bitcoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-            $cachedcontent{'btc'} = "[BTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+    if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")) {
+      if (int($ytlock{'CRYPTOCURRENCY_FETCH'}) < time) {
+        $ytlock{'CRYPTOCURRENCY_FETCH'} = time + 5*60;
+        if ($cachedtime < time) {
+          $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=15');
+          $rbody = $response->decoded_content;
+          $rbody =~ s/\n//sgi;
+          $rbody =~ s/\r//sgi;
+          $rbody =~ s/\s//sgi;
+          $rbody =~ s/\[\{\"id\":\"(.*)\}\]/$1/sgi;
+          @coindata = split(/\},\{\"id\":\"/, $rbody);
+          foreach $coin (@coindata) {
+            if (($coin =~ m/^bitcoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'btc'} = "[BTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
+            if (($coin =~ m/^litecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'ltc'} = "[LTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
+            if (($coin =~ m/^monero\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'xmr'} = "[XMR] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
+            if (($coin =~ m/^bitcoin-cash\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'bch'} = "[BCH] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
+            if (($coin =~ m/^ethereum\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'eth'} = "[ETH] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
+            if (($coin =~ m/^ripple\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'xrp'} = "[XRP] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+            }
           }
-          if (($coin =~ m/^litecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-            $cachedcontent{'ltc'} = "[LTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
-          }
-          if (($coin =~ m/^monero\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-            $cachedcontent{'xmr'} = "[XMR] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
-          }
-          if (($coin =~ m/^bitcoin-cash\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-            $cachedcontent{'bch'} = "[BCH] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
-          }
+          $cachedtime = time + (30*60);
+          $cached = "[live]";
         }
-        $cachedtime = time + (30*60);
-        $cached = "[live]";
-      }
-      else
-      {
-        $timeleft = $cachedtime - time;
-        $timeleft + 60;
-        $minutesleft = int($timeleft / 60);
-        $cached = "[cachad ${minutesleft}m]";
-      }
-      if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")) {
-        $message = $arguments->{who}.": $cachedcontent{'btc'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cached";
-      }
-      if ($arguments->{body} eq ".ltc") {
-        $message = $arguments->{who}.": $cachedcontent{'ltc'} | $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cached";
-      }
-      if ($arguments->{body} eq ".xmr") {
-        $message = $arguments->{who}.": $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cached";
-      }
-      if ($arguments->{body} eq ".bch") {
-        $message = $arguments->{who}.": $cachedcontent{'bch'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cached";
+        else
+        {
+          $timeleft = $cachedtime - time;
+          $timeleft + 60;
+          $minutesleft = int($timeleft / 60);
+          $cached = "[cachad ${minutesleft}m]";
+        }
+        if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")) {
+          $message = "$cachedcontent{'btc'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+        }
+        if ($arguments->{body} eq ".ltc") {
+          $message = "$cachedcontent{'ltc'} | $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+        }
+        if ($arguments->{body} eq ".xmr") {
+          $message = "$cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+        }
+        if ($arguments->{body} eq ".bch") {
+          $message = "$cachedcontent{'bch'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+        }
+        if ($arguments->{body} eq ".eth") {
+          $message = "$cachedcontent{'eth'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cached";
+        }
+        if ($arguments->{body} eq ".xrp") {
+          $message = "$cachedcontent{'xrp'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cached";
+        }
       }
     }
-
 
     if ($arguments->{body} =~ m/flashback\.org\/(p|t|sp|u)(\d+)/i) {
       if (int($ytlock{$2}) < time) {
@@ -520,7 +534,7 @@ sub said {
         }
 
         $checkerstring = $arguments->{body};
-        $checkerstring =~ s/\.(btc|bch|ltc|xmr)/\.cc/sgi;
+        $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
         $checkerstring =~ s/\.morn/\.help/sgi;
         $checkerstring =~ s/\.butkus/\.per/sgi;
         $checkerstring =~ s/\xE4/a/sg;
