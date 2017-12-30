@@ -39,7 +39,7 @@ sub said {
         }
       }
     }
-
+    $hasnotwritten{$arguments->{who}} = 0;
     $nickprefix = "";
     if ($self->pocoirc->has_channel_voice($arguments->{channel},$arguments->{who}) == 1) {
       $nickprefix = "\+";
@@ -63,11 +63,11 @@ sub said {
     }
 
 
-    if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")) {
+    if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
       if (int($ytlock{'CRYPTOCURRENCY_FETCH'}) < time) {
         $ytlock{'CRYPTOCURRENCY_FETCH'} = time + 5*60;
         if ($cachedtime < time) {
-          $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=15');
+          $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=40');
           $rbody = $response->decoded_content;
           $rbody =~ s/\n//sgi;
           $rbody =~ s/\r//sgi;
@@ -76,22 +76,25 @@ sub said {
           @coindata = split(/\},\{\"id\":\"/, $rbody);
           foreach $coin (@coindata) {
             if (($coin =~ m/^bitcoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'btc'} = "[BTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'btc'} = "[BTC] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
             if (($coin =~ m/^litecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'ltc'} = "[LTC] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'ltc'} = "[LTC] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
             if (($coin =~ m/^monero\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'xmr'} = "[XMR] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'xmr'} = "[XMR] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
             if (($coin =~ m/^bitcoin-cash\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'bch'} = "[BCH] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'bch'} = "[BCH] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
             if (($coin =~ m/^ethereum\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'eth'} = "[ETH] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'eth'} = "[ETH] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
             if (($coin =~ m/^ripple\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'xrp'} = "[XRP] \$".numprettify(int($1))." / ".numprettify(int($3))." kr";
+              $cachedcontent{'xrp'} = "[XRP] \$".numprettify($1)." / ".numprettify($3)." kr";
+            }
+            if (($coin =~ m/^dogecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+              $cachedcontent{'doge'} = "[DOGE] \$".numprettify($1)." / ".numprettify($3)." kr";
             }
           }
           $cachedtime = time + (30*60);
@@ -105,22 +108,25 @@ sub said {
           $cached = "[cachad ${minutesleft}m]";
         }
         if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")) {
-          $message = "$cachedcontent{'btc'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+          $message = "$cachedcontent{'btc'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
         }
         if ($arguments->{body} eq ".ltc") {
-          $message = "$cachedcontent{'ltc'} | $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+          $message = "$cachedcontent{'ltc'} | $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
         }
         if ($arguments->{body} eq ".xmr") {
-          $message = "$cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+          $message = "$cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
         }
         if ($arguments->{body} eq ".bch") {
-          $message = "$cachedcontent{'bch'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cached";
+          $message = "$cachedcontent{'bch'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
         }
         if ($arguments->{body} eq ".eth") {
-          $message = "$cachedcontent{'eth'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cached";
+          $message = "$cachedcontent{'eth'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
         }
         if ($arguments->{body} eq ".xrp") {
-          $message = "$cachedcontent{'xrp'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cached";
+          $message = "$cachedcontent{'xrp'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cachedcontent{'doge'} | $cached";
+        }
+        if ($arguments->{body} eq ".doge") {
+          $message = "$cachedcontent{'doge'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cached";
         }
       }
     }
@@ -250,7 +256,7 @@ sub said {
 
      $opmessage = "false";
     if ($arguments->{body} eq ".help") {
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp)";
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge)";
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
@@ -336,7 +342,7 @@ sub said {
       %cachedcontent = ();
       $msgexpiry = 0;
     }
-    $hasnotwritten{$arguments->{who}} = 0;
+
     if (($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)||($self->pocoirc->is_channel_halfop($arguments->{channel},'anna') == 1)) {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
@@ -730,6 +736,19 @@ sub kicked {
 
 sub numprettify {
   $number = $_[0];
+  if (($number =~ m/\./)&&(int($number) < 10)) {
+    ($numinteger, $numdecimal) = split(/\./, $number);
+    $number = $numinteger;
+    $numdecimal = substr($numdecimal, 0, 2);
+    if (length($numdecimal) == 1) {
+      $numdecimal = $numdecimal . "0";
+    }
+  }
+  else
+  {
+    $numdecimal = "";
+    $number = int($number);
+  }
   if ((length($number) > 3)&&(length($number) < 7)) {
     $number = substr($number, 0, length($number) - 3)." ".substr($number, length($number) - 3, 3);
   }
@@ -747,13 +766,18 @@ sub numprettify {
       {
         if (length($number) > 12) {
           $number = substr($number, 0, length($number) - 12)." ".substr($number, length($number) - 12, 3)." ".substr($number, length($number) - 9, 3)." ".substr($number, length($number) - 6, 3)." ".substr($number, length($number) - 3, 3);
-        }
+         }
       }
     }
   }
-  return $number;
+  if (length($numdecimal) > 0) {
+    return $number.",".$numdecimal;
+  }
+  else
+  {
+    return $number;
+  }
 }
-
 
 package main;
 
