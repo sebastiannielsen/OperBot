@@ -739,8 +739,11 @@ sub numprettify {
   if (($number =~ m/\./)&&(int($number) < 10)) {
     ($numinteger, $numdecimal) = split(/\./, $number);
     $number = $numinteger;
-    $numdecimal = substr($numdecimal, 0, 2);
+    $numdecimal = substr($numdecimal, 0, 3);
     if (length($numdecimal) == 1) {
+      $numdecimal = $numdecimal . "0";
+    }
+    if (length($numdecimal) == 2) {
       $numdecimal = $numdecimal . "0";
     }
   }
