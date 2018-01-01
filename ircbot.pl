@@ -4,18 +4,9 @@ use LWP::UserAgent;
 use MIME::Entity;
 use Email::Date::Format 'email_date';
 
+
 package SebbeBot;
 use base 'Bot::BasicBot';
-
-
-require 'botconfig.pl';
-#botconfig must contain:
-#
-# $botconfig_password = the password required to authenticate for OP services via NickServ.
-# $botconfig_from = the email to use as sender (in format: "Firstname Lastname <email@host.tld>").
-# $botconfig_to = the email to use as target (in format: "email@host.tld").
-# $botconfig_runas = the user to run dovecot delivery as.
-# $botconfig_ytkey = Youtube API key.
 
 $cachedtime = 0;
 %cachedcontent = ();
@@ -27,6 +18,12 @@ $msgexpiry = 0;
 %ytlock = ();
 %resultcache = ();
 $armed = "false";
+
+open(YTKEY, "./botkey.txt");
+$botytkey = <YTKEY>;
+close(YTKEY);
+$botytkey =~ s/\n//sgi;
+
 
 sub said {
   $self      = shift;
@@ -210,7 +207,7 @@ sub said {
         }
         else
         {       
-          $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$1.'&key='.$botconfig_ytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount))&part=snippet,contentDetails,statistics');
+          $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$1.'&key='.$botytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount,likeCount,dislikeCount))&part=snippet,contentDetails,statistics');
           $rbody = $response->decoded_content;
           $ytline = "fail";
           if ($rbody =~ m/^\{\n\s\"items\"\:\s\[\n\s\s\{\n\s\s\s\"snippet\"\:\s\{\n\s\s\s\s\"title\"\:\s\"(.*)\"\n\s\s\s\}\,\n\s\s\s\"contentDetails\"\:\s\{\n\s\s\s\s\"duration\"\:\s\"([PTHMS0123456789]*)\"\n\s\s\s\}\,\n\s\s\s\"statistics\"\:\s\{\n\s\s\s\s\"viewCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"likeCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"dislikeCount\"\:\s\"(\d*)\"\n\s\s\s\}\n\s\s\}\n\s\]\n\}$/s) {
@@ -222,7 +219,7 @@ sub said {
             if (int($likes) == 0) {
               $likes = 1;
             }
-            $percentage = int(int($likes) / int(int($likes) + int($dislikes)));
+            $percentage = int((int($likes) / int(int($likes) + int($dislikes)))*100);
             $views = numprettify($views);
             $duration =~ s/^PT(\d+H)?(\d+M)?(\d+S)?$/$1:$2:$3/;
             $duration =~ s/[HMS]*//g;
@@ -637,10 +634,7 @@ sub kicked {
   $hasnotwritten{$arguments->{kicked}} = 1;
 }
 
-
-
 sub transmitmail { #Sends a simple mail. Text in first argument. Log and the rest of text is included automatically.
-
   $mailbody = $_[0];
   $mailsubject = $_[0];
   $mailsubject =~ s/\n//sgi;
@@ -651,25 +645,21 @@ sub transmitmail { #Sends a simple mail. Text in first argument. Log and the res
   }
   $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
   $maildate = email_date;
-  $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $botconfig_from , To => $botconfig_to , Subject => $mailsubject, Date => $maildate, Data => $mailbody);
-  open MAIL, "| sudo -H -u ".$botconfig_runas." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
+  $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => "Boten Anna <anna\@sebbe.eu>", To => "sebastian\@sebbe.eu", Subject => $mailsubject, Date => $maildate, Data => $mailbody);
+  open(MAIL, "| sudo -H -u server /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"");
   $mime->print(\*MAIL);
   close MAIL;
 }
-
-
-
 
 sub getidfromhost { #This function calculates if a user is the .onion TOR endpoint, an unique ID-number to use during spam counting, an displayed ID using in warnings, and a banmask to be used if such a user needs to be banned.
   $fullhost = $_[0];
   ($parta, $partb) = split(/\@/, $fullhost);
   ($partaa, $partab) = split(/\!/, $parta);
-  ($partba, $partbb) = split(/\./, $partb);
-  if ($partbb =~ m/\./) {
-    $partbb = ".".$partbb;
+  ($partba, @tpartbb) = split(/\./, $partb);
+  foreach $pp (@tpartbb) {
+    $partbb = $partbb. "." . $pp;
   }
-  else
-  {
+  if ($partbb =~ m/^\.[^.]*$/) {
     $partbb = $partb; # If a user has a rhost like mycompany.com with cloak disabled (-x) we risk banning the whole .com domain. This avoids it.
   }
   if (($partbb eq ".4uh.b8obtf.IP")||($partb eq "127.0.0.1")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
@@ -688,7 +678,6 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   $displayid = $partbb;
   return ($istor, $idnum, $displayid, $banmask);
 }
-
 
 sub numprettify { # This function visually prettifies a float. This by rounding off to 3 decimals if the integer is lower than 10, else it strips off decimals completely. And then adding spaces each 3rd digit.
   $number = $_[0];
@@ -740,21 +729,17 @@ sub numprettify { # This function visually prettifies a float. This by rounding 
 
 package main;
 
-require 'botconfig.pl';
-#botconfig must contain:
-#
-# $botconfig_password = the password required to authenticate for OP services via NickServ.
-# $botconfig_from = the email to use as sender (in format: "Firstname Lastname <email@host.tld>").
-# $botconfig_to = the email to use as target (in format: "email@host.tld").
-# $botconfig_runas = the user to run dovecot delivery as.
-# $botconfig_ytkey = Youtube API key.
+open(TXT, "./botpassword.txt");
+$bot_password = <TXT>;
+close(TXT);
+$bot_password =~ s/\n//sgi;
 
 $bot = SebbeBot->new(
   server      => 'irc.swehack.org',
   port        => '6697',
   ssl         => 1,
   channels    => ['#laidback','#bot_test'],
-  password    => $botconfig_password,
+  password    => $bot_password,
   nick        => 'anna',
   name        => 'Sebastian Nielsen',
   ignore_list => ['NickServ','ChanServ','JuliaBot'],
