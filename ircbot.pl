@@ -663,7 +663,7 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   if ($partbb =~ m/^\.[^.]*$/) {
     $partbb = $partb; # If a user has a rhost like mycompany.com with cloak disabled (-x) we risk banning the whole .com domain. This avoids it.
   }
-  if (($partbb eq ".4uh.b8obtf.IP")||($partb eq "127.0.0.1")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
+  if (($partb eq "swehack-q25.4uh.b8obtf.IP")||($partb eq "127.0.0.1")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
      $banmask = "*!*".$partab."\@*".$partbb;
      $istor = "1";
      $idnum = $partab.$partbb; #Counting spam must also be done differently so 2 TOR users discussing things does not trigger the spam kick/ban system.
