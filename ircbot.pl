@@ -656,6 +656,7 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   ($parta, $partb) = split(/\@/, $fullhost);
   ($partaa, $partab) = split(/\!/, $parta);
   ($partba, @tpartbb) = split(/\./, $partb);
+  $partbb = "";
   foreach $pp (@tpartbb) {
     $partbb = $partbb. "." . $pp;
   }
