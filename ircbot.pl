@@ -7,6 +7,16 @@ use Email::Date::Format 'email_date';
 package SebbeBot;
 use base 'Bot::BasicBot';
 
+
+require 'botconfig.pl';
+#botconfig must contain:
+#
+# $botconfig_password = the password required to authenticate for OP services via NickServ.
+# $botconfig_from = the email to use as sender (in format: "Firstname Lastname <email@host.tld>").
+# $botconfig_to = the email to use as target (in format: "email@host.tld").
+# $botconfig_runas = the user to run dovecot delivery as.
+# $botconfig_ytkey = Youtube API key.
+
 $cachedtime = 0;
 %cachedcontent = ();
 @log = ();
@@ -17,12 +27,6 @@ $msgexpiry = 0;
 %ytlock = ();
 %resultcache = ();
 $armed = "false";
-
-$ytkey = "ENTER_YOUR_YOUTUBE_API_KEY_HERE";
-$mailsender = "ENTER_YOUR_MAILSENDER_ACCOUNT_HERE"; #example: "Boten Anna <mail\@example.org>"
-$mailtarget = "ENTER_YOUR_MAILTARGET_ACCOUNT_HERE"; #example: "postmaster\@example.org"
-$mailaccount = "ENTER_THE_USER_TO_RUN_DOVECOT_DELIVERY_AS"; #example: root
-
 
 sub said {
   $self      = shift;
@@ -131,6 +135,7 @@ sub said {
       }
     }
 
+
     if ($arguments->{body} =~ m/flashback\.org\/(p|t|sp|u)(\d+)/i) {
       if (int($ytlock{$2}) < time) {
         $ytlock{$2} = time + 5*60;
@@ -196,6 +201,7 @@ sub said {
       }
     }
 
+
     if (($arguments->{body} =~ m/youtube\.com\/watch\?v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
       if (int($ytlock{$1}) < time) {
         $ytlock{$1} = time + 5*60;
@@ -204,13 +210,19 @@ sub said {
         }
         else
         {       
-          $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$1.'&key='.$ytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount))&part=snippet,contentDetails,statistics');
+          $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$1.'&key='.$botconfig_ytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount))&part=snippet,contentDetails,statistics');
           $rbody = $response->decoded_content;
           $ytline = "fail";
-          if ($rbody =~ m/^\{\n\s\"items\"\:\s\[\n\s\s\{\n\s\s\s\"snippet\"\:\s\{\n\s\s\s\s\"title\"\:\s\"(.*)\"\n\s\s\s\}\,\n\s\s\s\"contentDetails\"\:\s\{\n\s\s\s\s\"duration\"\:\s\"([PTHMS0123456789]*)\"\n\s\s\s\}\,\n\s\s\s\"statistics\"\:\s\{\n\s\s\s\s\"viewCount\"\:\s\"(\d*)\"\n\s\s\s\}\n\s\s\}\n\s\]\n\}$/s) {
+          if ($rbody =~ m/^\{\n\s\"items\"\:\s\[\n\s\s\{\n\s\s\s\"snippet\"\:\s\{\n\s\s\s\s\"title\"\:\s\"(.*)\"\n\s\s\s\}\,\n\s\s\s\"contentDetails\"\:\s\{\n\s\s\s\s\"duration\"\:\s\"([PTHMS0123456789]*)\"\n\s\s\s\}\,\n\s\s\s\"statistics\"\:\s\{\n\s\s\s\s\"viewCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"likeCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"dislikeCount\"\:\s\"(\d*)\"\n\s\s\s\}\n\s\s\}\n\s\]\n\}$/s) {
             $duration = $2;
             $ytline = $1;
             $views = $3;
+            $likes = $4;
+            $dislikes = $5;
+            if (int($likes) == 0) {
+              $likes = 1;
+            }
+            $percentage = int(int($likes) / int(int($likes) + int($dislikes)));
             $views = numprettify($views);
             $duration =~ s/^PT(\d+H)?(\d+M)?(\d+S)?$/$1:$2:$3/;
             $duration =~ s/[HMS]*//g;
@@ -218,6 +230,7 @@ sub said {
             $hours = int($hours);
             $minutes = int($minutes);
             $seconds = int($seconds);
+            $subject = " visningar";
             if (int($hours) > 0) {
               if (int($minutes) < 10) {
                 $minutes = "0".$minutes;
@@ -235,6 +248,7 @@ sub said {
               $fulldur = "[".$minutes.":".$seconds."] ";
               if ($fulldur eq "[0:00] ") {
                 $fulldur = "[S\xC4NDNING] ";
+                $subject = " tittare";
               }
             }
             $ytline =~ s/\\//sgi;
@@ -244,7 +258,7 @@ sub said {
             $ytline =~ s/Ä/\xC4/sg;
             $ytline =~ s/Å/\xC5/sg;
             $ytline =~ s/Ö/\xD6/sg;
-            $ytline = $ytline . " - " . $fulldur . $views . " visningar";
+            $ytline = $ytline . " - " . $fulldur . $views . $subject . " (Gillas: ".$percentage."\%)";
           }
           unless ($ytline eq "fail") {
             $resultcache{$1} = $ytline;
@@ -254,7 +268,7 @@ sub said {
       }
     }
 
-     $opmessage = "false";
+    $opmessage = "false";
     if ($arguments->{body} eq ".help") {
       $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge)";
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
@@ -271,17 +285,7 @@ sub said {
 
     }
     if (($arguments->{body} eq ".shutdown")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
-      $mailbody = "Hej. ".$arguments->{who}." beg\xE4rde ett avslut.\n";
-      $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-      foreach $line (@log) {
-        $mailbody = $mailbody . $line . "\n";
-      }
-      $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-      $maildate = email_date;
-      $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Avslut beg\xE4rt av ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-      open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-      $mime->print(\*MAIL);
-      close MAIL;
+      transmitmail("Hej. ".$arguments->{who}." beg\xE4rde ett avslut.\n");
       $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
     }
     $opmsgallowed = "false";
@@ -295,25 +299,14 @@ sub said {
     if (($arguments->{body} =~ m/^\.opmsg (.+)/)&&($opmsgallowed eq "true")) {
       if (($msgexpiry < time)||($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
         $msgexpiry = time + 60*60;
-        $message = $1;
-        $message =~ s/ä/\xE4/sg;
-        $message =~ s/å/\xE5/sg;
-        $message =~ s/ö/\xF6/sg;
-        $message =~ s/Ä/\xC4/sg;
-        $message =~ s/Å/\xC5/sg;
-        $message =~ s/Ö/\xD6/sg;
-        $mailbody = "Hej. En OP med namn ".$arguments->{who}." skickade dig ett ilmeddelande via OPMSG. Meddelandet \xE4r:\n";
-        $mailbody = $mailbody . $message."\n\n";
-        $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-        foreach $line (@log) {
-          $mailbody = $mailbody . $line . "\n";
-        }
-        $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-        $maildate = email_date;
-        $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "OP-meddelande fr\xE5n ".$arguments->{who}, Date => $maildate, Data => $mailbody);
-        open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-        $mime->print(\*MAIL);
-        close MAIL;
+        $inmessage = $1;
+        $inmessage =~ s/ä/\xE4/sg;
+        $inmessage =~ s/å/\xE5/sg;
+        $inmessage =~ s/ö/\xF6/sg;
+        $inmessage =~ s/Ä/\xC4/sg;
+        $inmessage =~ s/Å/\xC5/sg;
+        $inmessage =~ s/Ö/\xD6/sg;
+        transmitmail("OP-meddelande fr\xE5n ".$arguments->{who}." via OPMSG. Meddelandet \xE4r:\n".$inmessage);
         $message = $arguments->{who}.": Meddelande skickat!";
       }
       else
@@ -388,22 +381,14 @@ sub said {
         if ($arguments->{body} =~ m/^\.setwarn (.+)/) {
           $user = $1;
           if ($self->pocoirc->is_channel_member($arguments->{channel},$user) == 1) {
-            $gethostname = $self->pocoirc->nick_long_form($user);
-            ($fullname, $host) = split("\@", $gethostname);
-            ($displayname, $realname) = split("\!", $fullname);
-            $gethostname = substr($gethostname, length($gethostname) - 14, 14);
-            $idnum = $gethostname;
-            $idnum =~ s/\.//sgi;
-            if ($gethostname eq ".4uh.b8obtf.IP") { # .onion HOST
-              $idnum = $realname.$idnum;
-            }
-            $bucket = $msg{$idnum};
+            ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
+            $bucket = $msg{$uidn};
             unless ($bucket =~ m/:/) {
               $bucket = "0:0:0:0:0";
             }
             ($number, $exp, $lmsg, $kicked, $warned) = split(":", $bucket);
             if (int($warned) > 0) {
-              $msg{$idnum} = $number.":".$exp.":".$lmsg.":0:2";
+              $msg{$uidn} = $number.":".$exp.":".$lmsg.":0:2";
               if ($kicked eq "1") {
                 $message = $arguments->{who}.": Satte kicked=0, warned=2 p\xE5 $user.";
               }
@@ -414,7 +399,7 @@ sub said {
             }
             else
             {
-              $msg{$idnum} = $number.":".$exp.":".$lmsg.":".$kicked.":1";
+              $msg{$uidn} = $number.":".$exp.":".$lmsg.":".$kicked.":1";
               $message = $arguments->{who}.": Satte warned=1 p\xE5 $user.";
             }
           }
@@ -426,27 +411,19 @@ sub said {
         if ($arguments->{body} =~ m/^\.setkick (.+)/) {
           $user = $1;
           if ($self->pocoirc->is_channel_member($arguments->{channel},$user) == 1) {
-            $gethostname = $self->pocoirc->nick_long_form($user);
-            ($fullname, $host) = split("\@", $gethostname);
-            ($displayname, $realname) = split("\!", $fullname);
-            $gethostname = substr($gethostname, length($gethostname) - 14, 14);
-            $idnum = $gethostname;
-            $idnum =~ s/\.//sgi;
-            if ($gethostname eq ".4uh.b8obtf.IP") {
-              $idnum = $realname.$idnum;
-            }
-            $bucket = $msg{$idnum};
+            ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
+            $bucket = $msg{$uidn};
             unless ($bucket =~ m/:/) {
               $bucket = "0:0:0:0:0";
             }
             ($number, $exp, $lmsg, $kicked, $warned) = split(":", $bucket);
             if ($warned eq "2") {
-              $msg{$idnum} = $number.":".$exp.":".$lmsg.":1:1";
+              $msg{$uidn} = $number.":".$exp.":".$lmsg.":1:1";
               $message = $arguments->{who}.": Satte kicked=1, warned=1 p\xE5 $user.";
             }
             else
             {
-              $msg{$idnum} = $number.":".$exp.":".$lmsg.":1:".$warned;
+              $msg{$uidn} = $number.":".$exp.":".$lmsg.":1:".$warned;
               $message = $arguments->{who}.": Satte kicked=1 p\xE5 $user.";
             }
           }
@@ -458,16 +435,8 @@ sub said {
         if ($arguments->{body} =~ m/^\.clruser (.+)/) {
           $user = $1;
           if ($self->pocoirc->is_channel_member($arguments->{channel},$user) == 1) {
-            $gethostname = $self->pocoirc->nick_long_form($user);
-            ($fullname, $host) = split("\@", $gethostname);
-            ($displayname, $realname) = split("\!", $fullname);
-            $gethostname = substr($gethostname, length($gethostname) - 14, 14);
-            $idnum = $gethostname;
-            $idnum =~ s/\.//sgi;
-            if ($gethostname eq ".4uh.b8obtf.IP") {
-              $idnum = $realname.$idnum;
-            }
-            $msg{$idnum} = "0:0:0:0:0";
+            ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
+            $msg{$uidn} = "0:0:0:0:0";
             $message = $arguments->{who}.": Rensade status p\xE5 $user.";
           }
           else
@@ -492,18 +461,8 @@ sub said {
             {
               $immunity = "0";
             }
-
-
-            $gethostname = $self->pocoirc->nick_long_form($user);
-            ($fullname, $host) = split("\@", $gethostname);
-            ($displayname, $realname) = split("\!", $fullname);
-            $gethostname = substr($gethostname, length($gethostname) - 14, 14);
-            $idnum = $gethostname;
-            $idnum =~ s/\.//sgi;
-            if ($gethostname eq ".4uh.b8obtf.IP") {
-              $idnum = $realname.$idnum;
-            }
-            $bucket = $msg{$idnum};
+            ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
+            $bucket = $msg{$uidn};
             unless ($bucket =~ m/:/) {
               $bucket = "0:0:0:0:0";
             }
@@ -515,7 +474,7 @@ sub said {
             {
               $stat = "hasnotwritten=0";
             }
-            $message = $arguments->{who}.": (".$idnum.") kicked=".$kicked." warned=".$warned." (".$user.") ".$stat." immunity=".$immunity." (OP=".int($isop)." HOP=".int($ishp)." ADM=".int($isad)." OWN=".int($isow)." VO=".int($isv)." IOP=".int($ircop)." IGN=".int($ign).").";
+            $message = $arguments->{who}.": (".$uidn.") kicked=".$kicked." warned=".$warned." tor=".$uist." (".$user.") ".$stat." immunity=".$immunity." (OP=".int($isop)." HOP=".int($ishp)." ADM=".int($isad)." OWN=".int($isow)." VO=".int($isv)." IOP=".int($ircop)." IGN=".int($ign).").";
           }
           else
           {
@@ -529,15 +488,7 @@ sub said {
       }
 
       if ($immunity eq "false") {
-        $gethostname = $self->pocoirc->nick_long_form($arguments->{who});
-        ($fullname, $host) = split("\@", $gethostname);
-        ($displayname, $realname) = split("\!", $fullname);
-        $gethostname = substr($gethostname, length($gethostname) - 14, 14);
-        $idnum = $gethostname;
-        $idnum =~ s/\.//sgi;
-        if ($gethostname eq ".4uh.b8obtf.IP") {
-          $idnum = $realname.$idnum;
-        }
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
 
         $checkerstring = $arguments->{body};
         $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
@@ -593,35 +544,18 @@ sub said {
           if (int($number) > 5) {
             if ($kicked eq "1") {
               if ($warned eq "1") {
-                if ($gethostname eq ".4uh.b8obtf.IP") {
-                  $banname = $realname;
-                }
-                else
-                {
-                  $banname = "";
-                }
-                $self->mode($arguments->{channel}." +b *!*".$banname."\@*".$gethostname);
+                $self->mode($arguments->{channel}." +b ".$banmask);
                 $self->kick($arguments->{channel}, $arguments->{who}, "Du slutade inte spamma!");
                 $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:1"; #We won't reset as there might be multiple users with same hostname in channel.
-                $mailbody = "Hej. Jag bannade just nu en spammare med nicket ".$arguments->{who}." (host: ".$gethostname.") fr\xE5n ".$arguments->{channel}."\n";
-                if (length($banname) > 0) {
-                  $mailbody = $mailbody . "Anv\xE4ndaren \xE4r en TOR-anv\xE4ndare, s\xE5 jag bannade baserat p\xE5 realname ".$banname.".\n";
+                $tempbody = "Bannade spammare ".$arguments->{who}." (host: ".$displayid.") fr\xE5n ".$arguments->{channel}."\n";
+                if ($istor eq "1") {
+                  $tempbody = $tempbody . "Anv\xE4ndaren \xE4r en TOR-anv\xE4ndare, s\xE5 jag bannade genom att anv\xE4nda ".$banmask." .\n";
                 }
-                $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-                foreach $line (@log) {
-                  $mailbody = $mailbody . $line . "\n";
-                }
-                $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-
-                $maildate = email_date;
-                $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Bannade ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-                open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-                $mime->print(\*MAIL);
-                close MAIL;
+                transmitmail($tempbody."\n");
               }
               else
               {
-                $message = $arguments->{who}." ($gethostname): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli BANNAD!";
+                $message = $arguments->{who}." ($displayid): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli BANNAD!";
                 $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:1";
               }
             }
@@ -630,27 +564,17 @@ sub said {
               if ($warned eq "2") {
                 $self->kick($arguments->{channel}, $arguments->{who}, "Sluta spamma!");
                 $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:0";
-                $mailbody = "Hej. Jag kickade just nu en spammare med nicket ".$arguments->{who}." (host: ".$gethostname.") fr\xE5n ".$arguments->{channel}."\n";
-                $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-                foreach $line (@log) {
-                  $mailbody = $mailbody . $line . "\n";
-                }
-                $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-                $maildate = email_date;
-                $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Kickade ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-                open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-                $mime->print(\*MAIL);
-                close MAIL;
+                transmitmail("Kickade spammare ".$arguments->{who}." (host: ".$displayid.") fr\xE5n ".$arguments->{channel}."\n");
               }
               else
               {
                 if ($warned eq "1") {
-                  $message = $arguments->{who}." ($gethostname): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli kickad!";
+                  $message = $arguments->{who}." ($displayid): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli kickad!";
                   $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":0:2";
                 }
                 else
                 {
-                  $message = $arguments->{who}." ($gethostname): !!VARNING!! Var sn\xE4ll och sluta spamma!!";
+                  $message = $arguments->{who}." ($displayid): !!VARNING!! Var sn\xE4ll och sluta spamma!!";
                   $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":0:1";
                 }
               }
@@ -695,38 +619,18 @@ sub kicked {
       if ($#log > 40) {
         shift(@log);
       }
-      $mailbody = "Hej. Jag deoppade just nu en maktmissbrukande OP med namnet ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickade eller bannade mig (anna) utan anledning.\n";
-      $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-      foreach $line (@log) {
-        $mailbody = $mailbody . $line . "\n";
-      }
-      $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-      $maildate = email_date;
-      $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Deoppade bot-kickern ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-      open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-      $mime->print(\*MAIL);
-      close MAIL;
+      transmitmail("Deoppade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickar mig (anna) utan anledning.\n");
     }
     else
     {
-      if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)&&($arguments->{who} ne "ChanServ")) {
+      if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)&&($arguments->{who} ne "ChanServ")&&($arguments->{kicked} ne "JuliaBot")) {
         $self->mode($arguments->{channel}." -oh ".$arguments->{who});
         $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
         push(@log, "<\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
         if ($#log > 40) {
           shift(@log);
         }
-        $mailbody = "Hej. Jag deoppade just nu en maktmissbrukande OP med namnet ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som spamkickar ".$arguments->{kicked}." utan anledning.\n";
-        $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
-        foreach $line (@log) {
-          $mailbody = $mailbody . $line . "\n";
-        }
-        $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
-        $maildate = email_date;
-        $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $mailsender , To => $mailtarget, Subject => "Deoppade ".$arguments->{who}." fr\xE5n ".$arguments->{channel}, Date => $maildate, Data => $mailbody);
-        open MAIL, "| sudo -H -u ".$mailaccount." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
-        $mime->print(\*MAIL);
-        close MAIL;
+        transmitmail("Deoppade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som spamkickar ".$arguments->{kicked}." utan anledning.\n");
       }
     }
   }
@@ -734,7 +638,59 @@ sub kicked {
 }
 
 
-sub numprettify {
+
+sub transmitmail { #Sends a simple mail. Text in first argument. Log and the rest of text is included automatically.
+
+  $mailbody = $_[0];
+  $mailsubject = $_[0];
+  $mailsubject =~ s/\n//sgi;
+  $mailsubject = substr($mailsubject, 0, 50);
+  $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
+  foreach $line (@log) {
+    $mailbody = $mailbody . $line . "\n";
+  }
+  $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
+  $maildate = email_date;
+  $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => $botconfig_from , To => $botconfig_to , Subject => $mailsubject, Date => $maildate, Data => $mailbody);
+  open MAIL, "| sudo -H -u ".$botconfig_runas." /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"";
+  $mime->print(\*MAIL);
+  close MAIL;
+}
+
+
+
+
+sub getidfromhost { #This function calculates if a user is the .onion TOR endpoint, an unique ID-number to use during spam counting, an displayed ID using in warnings, and a banmask to be used if such a user needs to be banned.
+  $fullhost = $_[0];
+  ($parta, $partb) = split(/\@/, $fullhost);
+  ($partaa, $partab) = split(/\!/, $parta);
+  ($partba, $partbb) = split(/\./, $partb);
+  if ($partbb =~ m/\./) {
+    $partbb = ".".$partbb;
+  }
+  else
+  {
+    $partbb = $partb; # If a user has a rhost like mycompany.com with cloak disabled (-x) we risk banning the whole .com domain. This avoids it.
+  }
+  if (($partbb eq ".4uh.b8obtf.IP")||($partb eq "127.0.0.1")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
+     $banmask = "*!*".$partab."\@*".$partbb;
+     $istor = "1";
+     $idnum = $partab.$partbb; #Counting spam must also be done differently so 2 TOR users discussing things does not trigger the spam kick/ban system.
+  }
+  else
+  {  # Host is NOT tor onion node. Ban normally.
+     $banmask = "*!*\@*".$partbb;
+     $istor = "0";
+     $idnum = $partbb; #Counting spam can be done normally.
+  }
+  $idnum = lc($idnum);
+  $idnum =~ s/[^a-z0-9]*//sgi;
+  $displayid = $partbb;
+  return ($istor, $idnum, $displayid, $banmask);
+}
+
+
+sub numprettify { # This function visually prettifies a float. This by rounding off to 3 decimals if the integer is lower than 10, else it strips off decimals completely. And then adding spaces each 3rd digit.
   $number = $_[0];
   if (($number =~ m/\./)&&(int($number) < 10)) {
     ($numinteger, $numdecimal) = split(/\./, $number);
@@ -769,7 +725,7 @@ sub numprettify {
       {
         if (length($number) > 12) {
           $number = substr($number, 0, length($number) - 12)." ".substr($number, length($number) - 12, 3)." ".substr($number, length($number) - 9, 3)." ".substr($number, length($number) - 6, 3)." ".substr($number, length($number) - 3, 3);
-         }
+        }
       }
     }
   }
@@ -784,14 +740,21 @@ sub numprettify {
 
 package main;
 
-$channelpassword = "ENTER_YOUR_NICKSERV_PASSWORD_HERE";
+require 'botconfig.pl';
+#botconfig must contain:
+#
+# $botconfig_password = the password required to authenticate for OP services via NickServ.
+# $botconfig_from = the email to use as sender (in format: "Firstname Lastname <email@host.tld>").
+# $botconfig_to = the email to use as target (in format: "email@host.tld").
+# $botconfig_runas = the user to run dovecot delivery as.
+# $botconfig_ytkey = Youtube API key.
 
 $bot = SebbeBot->new(
   server      => 'irc.swehack.org',
   port        => '6697',
   ssl         => 1,
   channels    => ['#laidback','#bot_test'],
-  password    => $channelpassword,
+  password    => $botconfig_password,
   nick        => 'anna',
   name        => 'Sebastian Nielsen',
   ignore_list => ['NickServ','ChanServ','JuliaBot'],
