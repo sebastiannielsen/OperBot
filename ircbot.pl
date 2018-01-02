@@ -293,19 +293,22 @@ sub said {
     }
 
     if ($arguments->{body} eq ".fetchlog") {
-        if (int($ytlock{'FETCHLOG_COMMAND'}) < time) {
-        $ytlock{'FETCHLOG_COMMAND'} = time + 60;
-        $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
-        $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
-        $i = 0;
-        foreach $msgline (@log) {
-          if ($i < 20) {
-            $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
-            $i++;
-          }
-          else
-          {
-            last;
+      if (int($ytlock{'FETCHLOG_COMMAND'}) < time) {
+        if (int($ytlock{'FETCHLOG_COMMAND'.$arguments->{who}}) < time) {
+          $ytlock{'FETCHLOG_COMMAND'} = time + 60;
+          $ytlock{'FETCHLOG_COMMAND'.$arguments->{who}} = time + 5*60;
+          $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
+          $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
+          $i = 0;
+          foreach $msgline (@log) {
+            if ($i < 20) {
+              $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
+              $i++;
+            }
+            else
+            {
+              last;
+            }
           }
         }
       }
