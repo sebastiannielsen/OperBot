@@ -17,7 +17,7 @@ $msgexpiry = 0;
 %hasnotwritten = ();
 %ytlock = ();
 %resultcache = ();
-$armed = "false";
+$armed = 0;
 
 open(YTKEY, "./botkey.txt");
 $botytkey = <YTKEY>;
@@ -30,11 +30,22 @@ sub said {
   $arguments = shift;    # Contains the message that the bot heard.
   $ua = LWP::UserAgent->new;
   $message = "";
+  ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+  if (length($seclog) == 1) {
+    $seclog = "0".$seclog;
+  }
+  if (length($minlog) == 1) {
+    $minlog = "0".$minlog;
+  }
+  if (length($hourlog) == 1) {
+    $hourlog = "0".$hourlog;
+  }
+  $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   unless (($arguments->{channel} eq "msg")||($arguments->{who} eq "JuliaBot")||($arguments->{who} eq "ChanServ")||($arguments->{who} eq "NickServ")) {
-    if ($armed eq "true") {
+    if ($armed > 9) {
       if ($self->pocoirc->is_channel_operator($arguments->{channel},'anna') != 1) {
         $self->say(channel => "msg", who => "ChanServ", body => "OP ".$arguments->{channel});
-        push(@log, "*** N\xE5gon idiot som deoppade mig. Reoppar i ".$arguments->{channel});
+        push(@log, $timestampprefix. "] *** N\xE5gon idiot som deoppade mig. Reoppar i ".$arguments->{channel});
         if ($#log > 40) {
           shift(@log);
         }
@@ -58,7 +69,7 @@ sub said {
       $nickprefix = "\~";
     }
 
-    push(@log, "<".$nickprefix.$arguments->{who}."> ".$arguments->{body});
+    push(@log, $timestampprefix . "] <".$nickprefix.$arguments->{who}."> ".$arguments->{body});
     if ($#log > 40) {
       shift(@log);
     }
@@ -267,7 +278,7 @@ sub said {
 
     $opmessage = "false";
     if ($arguments->{body} eq ".help") {
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge)";
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog";
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
@@ -279,8 +290,16 @@ sub said {
        $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick>";
        $opmessage = "true";
       }
-
     }
+
+    if ($arguments->{body} eq ".fetchlog") {
+      $message = "Du har PM fr\xE5n mig med loggen!";
+      $self->say(channel => "msg", who => $argments->{who}, body => "H\xE4r kommer de 40 senaste meddelandena");
+      foreach $msgline (@log) {
+        $self->say(channel => "msg", who => $argments->{who}, body => $msgline);
+      }
+    }
+
     if (($arguments->{body} eq ".shutdown")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
       transmitmail("Hej. ".$arguments->{who}." beg\xE4rde ett avslut.\n");
       $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
@@ -315,9 +334,8 @@ sub said {
       $lastclear = "0-0-0";
       $message = $arguments->{who}.": Rubbet rensat inkl cache!";
     }
-    if (($arguments->{body} eq ".armprotection")&&($self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who}) == 1)&&($arguments->{who} eq "Sebastian")) {
-      $armed = "true";
-      $message = $arguments->{who}.": DeOP-skydd aktiverat!";
+    if ($armed < 10) {
+      $armed++;
     }
 
     ( $day, $month, $year ) = (localtime)[3,4,5];
@@ -587,7 +605,7 @@ sub said {
       $message =~ s/\n//sgi;
       $message = substr($message,0,150);
     }
-    push(@log, "<\@anna> $message");
+    push(@log, $timestampprefix."] <\@anna> $message");
     if ($#log > 40) {
       shift(@log);
     }
@@ -602,7 +620,18 @@ sub said {
 sub kicked {
   $self      = shift;
   $arguments = shift;
-  push(@log, "*** ".$arguments->{who}." kickade ".$arguments->{kicked}." fr\xE5n ".$arguments->{channel});
+  ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+  if (length($seclog) == 1) {
+    $seclog = "0".$seclog;
+  }
+  if (length($minlog) == 1) {
+    $minlog = "0".$minlog;
+  }
+  if (length($hourlog) == 1) {
+    $hourlog = "0".$hourlog;
+  }
+  $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
+  push(@log, $timestampprefix. "] *** ".$arguments->{who}." kickade ".$arguments->{kicked}." fr\xE5n ".$arguments->{channel});
   if ($#log > 40) {
     shift(@log);
   }
@@ -612,7 +641,7 @@ sub kicked {
       $self->say(channel => "msg", who => "ChanServ", body => "DEOP ".$arguments->{channel}." ".$arguments->{who});
       $self->join($arguments->{channel});
       $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
-      push(@log, "<\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+      push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
       if ($#log > 40) {
         shift(@log);
       }
@@ -623,7 +652,7 @@ sub kicked {
       if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)&&($arguments->{who} ne "ChanServ")&&($arguments->{kicked} ne "JuliaBot")) {
         $self->mode($arguments->{channel}." -oh ".$arguments->{who});
         $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
-        push(@log, "<\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+        push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
         if ($#log > 40) {
           shift(@log);
         }
