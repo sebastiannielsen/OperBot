@@ -294,9 +294,9 @@ sub said {
 
     if ($arguments->{body} eq ".fetchlog") {
       $message = "Du har PM fr\xE5n mig med loggen!";
-      $self->say(channel => "msg", who => $argments->{who}, body => "H\xE4r kommer de 40 senaste meddelandena");
+      $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 40 senaste meddelandena:");
       foreach $msgline (@log) {
-        $self->say(channel => "msg", who => $argments->{who}, body => $msgline);
+        $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
       }
     }
 
