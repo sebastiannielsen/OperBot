@@ -764,10 +764,12 @@ $bot_password = <TXT>;
 close(TXT);
 $bot_password =~ s/\n//sgi;
 
+#Flood protection disabled for PM's. There is already a flood protection for public messages.
 $bot = SebbeBot->new(
   server      => 'irc.swehack.org',
   port        => '6697',
   ssl         => 1,
+  flood       => 1,
   channels    => ['#laidback','#bot_test'],
   password    => $bot_password,
   nick        => 'anna',
