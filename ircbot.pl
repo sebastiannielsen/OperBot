@@ -570,7 +570,7 @@ sub said {
             $addnum = $number + 1;
           }
           $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":".$kicked.":".$warned;
-          if (int($number) > 5) {
+          if (int($number) > 4) {
             if ($kicked eq "1") {
               if ($warned eq "1") {
                 $self->mode($arguments->{channel}." +b ".$banmask);
