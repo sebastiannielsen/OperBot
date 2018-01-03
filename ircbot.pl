@@ -476,7 +476,7 @@ sub do_opmsg { # This function corresponds to .opmsg **NOTICE** This isn't a sen
       $inmessage =~ s/Ä/\xC4/sg;
       $inmessage =~ s/Å/\xC5/sg;
       $inmessage =~ s/Ö/\xD6/sg;
-      transmitmail("OP-meddelande fr\xE5n ".$arguments->{who}." via OPMSG. Meddelandet \xE4r:\n".$inmessage."\n\n");
+      transmitmail("OP-meddelande fr\xE5n ".$human." via OPMSG. Meddelandet \xE4r:\n".$inmessage."\n\n");
       $message = $human.": Meddelande skickat!";
     }
     else
