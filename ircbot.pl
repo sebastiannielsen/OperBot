@@ -8,15 +8,11 @@ use Email::Date::Format 'email_date';
 package SebbeBot;
 use base 'Bot::BasicBot';
 
-$cachedtime = 0;
-%cachedcontent = ();
 @log = ();
-$msgexpiry = 0;
 
 %msg = ();
 %hasnotwritten = ();
 %ytlock = ();
-%resultcache = ();
 $armed = 0;
 
 open(YTKEY, "./botkey.txt");
@@ -51,6 +47,11 @@ sub said {
         }
       }
     }
+    else
+    {
+      $armed++;
+    }
+
     $hasnotwritten{$arguments->{who}} = 0;
     $nickprefix = "";
     if ($self->pocoirc->has_channel_voice($arguments->{channel},$arguments->{who}) == 1) {
@@ -76,212 +77,31 @@ sub said {
 
 
     if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
-      if (int($ytlock{'CRYPTOCURRENCY_FETCH'}) < time) {
-        $ytlock{'CRYPTOCURRENCY_FETCH'} = time + 5*60;
-        if ($cachedtime < time) {
-          $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=40');
-          $rbody = $response->decoded_content;
-          $rbody =~ s/\n//sgi;
-          $rbody =~ s/\r//sgi;
-          $rbody =~ s/\s//sgi;
-          $rbody =~ s/\[\{\"id\":\"(.*)\}\]/$1/sgi;
-          @coindata = split(/\},\{\"id\":\"/, $rbody);
-          foreach $coin (@coindata) {
-            if (($coin =~ m/^bitcoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'btc'} = "[BTC] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^litecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'ltc'} = "[LTC] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^monero\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'xmr'} = "[XMR] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^bitcoin-cash\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'bch'} = "[BCH] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^ethereum\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'eth'} = "[ETH] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^ripple\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'xrp'} = "[XRP] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-            if (($coin =~ m/^dogecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
-              $cachedcontent{'doge'} = "[DOGE] \$".numprettify($1)." / ".numprettify($3)." kr";
-            }
-          }
-          $cachedtime = time + (30*60);
-          $cached = "[live]";
-        }
-        else
-        {
-          $timeleft = $cachedtime - time;
-          $timeleft + 60;
-          $minutesleft = int($timeleft / 60);
-          $cached = "[cachad ${minutesleft}m]";
-        }
-        if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")) {
-          $message = "$cachedcontent{'btc'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".ltc") {
-          $message = "$cachedcontent{'ltc'} | $cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".xmr") {
-          $message = "$cachedcontent{'xmr'} | $cachedcontent{'btc'} | $cachedcontent{'ltc'} | $cachedcontent{'bch'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".bch") {
-          $message = "$cachedcontent{'bch'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".eth") {
-          $message = "$cachedcontent{'eth'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".xrp") {
-          $message = "$cachedcontent{'xrp'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cachedcontent{'doge'} | $cached";
-        }
-        if ($arguments->{body} eq ".doge") {
-          $message = "$cachedcontent{'doge'} | $cachedcontent{'xmr'} | $cachedcontent{'ltc'} | $cachedcontent{'btc'} | $cachedcontent{'eth'} | $cachedcontent{'bch'} | $cachedcontent{'xrp'} | $cached";
-        }
-      }
+      $message = do_cryptocurrency($arguments->{body});
     }
-
 
     if ($arguments->{body} =~ m/flashback\.org\/(p|t|sp|u)(\d+)/i) {
-      if (int($ytlock{$2}) < time) {
-        $ytlock{$2} = time + 5*60;
-        if (length($resultcache{$2}) > 1) {
-          $message = $resultcache{$2};
-        }
-        else
-        {       
-          $response = $ua->get('https://www.flashback.org/'.$1.$2);
-          $rbody = $response->decoded_content;
-          $fbline = "fail";
-          if ($rbody =~ m/<title>([^<]*)<\/title>/s) {
-            $fbline = $1;
-            if ($fbline eq "Flashback Forum") {
-              $fbline = "fail"; # If thread is put in garbage bin we can't see the title. So instead of returning useless text, return nothing.
-            }
-            $fbline =~ s/\&auml\;/\xE4/sg;
-            $fbline =~ s/\&aring\;/\xE5/sg;
-            $fbline =~ s/\&ouml\;/\xF6/sg;
-            $fbline =~ s/\&Auml\;/\xC4/sg;
-            $fbline =~ s/\&Aring\;/\xC5/sg;
-            $fbline =~ s/\&Ouml\;/\xD6/sg;
-            $fbline =~ s/\&quot\;/\"/sg;
-          }
-          unless ($fbline eq "fail") {
-            $resultcache{$2} = $fbline;
-            $message = $fbline;
-          }
-        }
-      }
+      $message = do_flashback($1.$2);
     }
-
 
     if (($arguments->{body} =~ m/swehack\.org\/viewtopic\.php\?/i)&&($arguments->{body} =~ m/t=(\d+)/)) {
-      if (int($ytlock{$1}) < time) {
-        $ytlock{$1} = time + 5*60;
-        if (length($resultcache{$1}) > 1) {
-          $message = $resultcache{$1};
-        }
-        else
-        {       
-          $response = $ua->get('https://swehack.org/viewtopic.php?t='.$1);
-          $rbody = $response->decoded_content;
-          $sweline = "fail";
-          if ($rbody =~ m/<title>([^<]*)<\/title>/s) {
-            $sweline = $1;
-            if (($sweline =~ m/swehack - Ett svenskt diskussionsforum om IT/)&&($sweline =~ m/(Information|Logga in)/)) {
-              $sweline = "fail"; # Thread does not exist or are not accessible for guest, return nothing.
-            }
-            $sweline =~ s/\&auml\;/\xE4/sg;
-            $sweline =~ s/\&aring\;/\xE5/sg;
-            $sweline =~ s/\&ouml\;/\xF6/sg;
-            $sweline =~ s/\&Auml\;/\xC4/sg;
-            $sweline =~ s/\&Aring\;/\xC5/sg;
-            $sweline =~ s/\&Ouml\;/\xD6/sg;
-            $sweline =~ s/\&quot\;/\"/sg;
-          }
-          unless ($sweline eq "fail") {
-            $resultcache{$1} = $sweline;
-            $message = $sweline;
-          }
-        }
-      }
+      $message = do_swehack($1);
     }
 
+    if (($arguments->{body} =~ m/youtube\.com\/watch\?[^v]*v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
+      $message = do_youtube($1);
+    }
 
-    if (($arguments->{body} =~ m/youtube\.com\/watch\?v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
-      if (int($ytlock{$1}) < time) {
-        $ytlock{$1} = time + 5*60;
-        if (length($resultcache{$1}) > 1) {
-          $message = $resultcache{$1};
-        }
-        else
-        {       
-          $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$1.'&key='.$botytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount,likeCount,dislikeCount))&part=snippet,contentDetails,statistics');
-          $rbody = $response->decoded_content;
-          $ytline = "fail";
-          if ($rbody =~ m/^\{\n\s\"items\"\:\s\[\n\s\s\{\n\s\s\s\"snippet\"\:\s\{\n\s\s\s\s\"title\"\:\s\"(.*)\"\n\s\s\s\}\,\n\s\s\s\"contentDetails\"\:\s\{\n\s\s\s\s\"duration\"\:\s\"([PTHMS0123456789]*)\"\n\s\s\s\}\,\n\s\s\s\"statistics\"\:\s\{\n\s\s\s\s\"viewCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"likeCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"dislikeCount\"\:\s\"(\d*)\"\n\s\s\s\}\n\s\s\}\n\s\]\n\}$/s) {
-            $duration = $2;
-            $ytline = $1;
-            $views = $3;
-            $likes = $4;
-            $dislikes = $5;
-            if (int($likes) == 0) {
-              $likes = 1;
-            }
-            $percentage = int((int($likes) / int(int($likes) + int($dislikes)))*100);
-            $views = numprettify($views);
-            $duration =~ s/^PT(\d+H)?(\d+M)?(\d+S)?$/$1:$2:$3/;
-            $duration =~ s/[HMS]*//g;
-            ($hours, $minutes, $seconds) = split(":", $duration);
-            $hours = int($hours);
-            $minutes = int($minutes);
-            $seconds = int($seconds);
-            $subject = " visningar";
-            if (int($hours) > 0) {
-              if (int($minutes) < 10) {
-                $minutes = "0".$minutes;
-              }
-              if (int($seconds) < 10) {
-                $seconds = "0".$seconds;
-              }
-              $fulldur = "[".$hours.":".$minutes.":".$seconds."] ";
-            }
-            else
-            {
-              if (int($seconds) < 10) {
-                $seconds = "0".$seconds;
-              }
-              $fulldur = "[".$minutes.":".$seconds."] ";
-              if ($fulldur eq "[0:00] ") {
-                $fulldur = "[S\xC4NDNING] ";
-                $subject = " tittare";
-              }
-            }
-            $ytline =~ s/\\//sgi;
-            $ytline =~ s/ä/\xE4/sg;
-            $ytline =~ s/å/\xE5/sg;
-            $ytline =~ s/ö/\xF6/sg;
-            $ytline =~ s/Ä/\xC4/sg;
-            $ytline =~ s/Å/\xC5/sg;
-            $ytline =~ s/Ö/\xD6/sg;
-            $ytline = $ytline . " - " . $fulldur . $views . $subject . " (Gillas: ".$percentage."\%)";
-          }
-          unless ($ytline eq "fail") {
-            $resultcache{$1} = $ytline;
-            $message = $ytline;
-          }
-        }
-      }
+    if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
+      $message = do_opmessage($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
     }
 
     $opmessage = "false";
     if ($arguments->{body} eq ".help") {
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog";
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog";
       if (($isop == 1)||($ishp == 1)) {
        $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg>";
        $opmessage = "true";
@@ -293,10 +113,10 @@ sub said {
     }
 
     if ($arguments->{body} eq ".fetchlog") {
-      if (int($ytlock{'FETCHLOG_COMMAND'}) < time) {
-        if (int($ytlock{'FETCHLOG_COMMAND'.$arguments->{who}}) < time) {
-          $ytlock{'FETCHLOG_COMMAND'} = time + 20;
-          $ytlock{'FETCHLOG_COMMAND'.$arguments->{who}} = time + 5*60;
+      if (int($ytlock{'FETCHLOG!_COMMAND'}) < time) {
+        if (int($ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}}) < time) {
+          $ytlock{'FETCHLOG!_COMMAND'} = time + 20;
+          $ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}} = time + 5*60;
           $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
           $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
           $i = 0;
@@ -318,38 +138,10 @@ sub said {
       transmitmail("Hej. ".$arguments->{who}." beg\xE4rde ett avslut.\n");
       $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
     }
-    $opmsgallowed = "false";
-    if ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who}) == 1) {
-      $opmsgallowed = "true";
-    }
-    if ($arguments->{who} eq "topcat") {
-      $opmsgallowed = "true";
-    }
 
-    if (($arguments->{body} =~ m/^\.opmsg (.+)/)&&($opmsgallowed eq "true")) {
-      if (($msgexpiry < time)||($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
-        $msgexpiry = time + 60*60;
-        $inmessage = $1;
-        $inmessage =~ s/ä/\xE4/sg;
-        $inmessage =~ s/å/\xE5/sg;
-        $inmessage =~ s/ö/\xF6/sg;
-        $inmessage =~ s/Ä/\xC4/sg;
-        $inmessage =~ s/Å/\xC5/sg;
-        $inmessage =~ s/Ö/\xD6/sg;
-        transmitmail("OP-meddelande fr\xE5n ".$arguments->{who}." via OPMSG. Meddelandet \xE4r:\n".$inmessage);
-        $message = $arguments->{who}.": Meddelande skickat!";
-      }
-      else
-      {
-        $message = $arguments->{who}.": .opmsg kan bara anv\xE4ndas en g\xE5ng i timmen!";
-      }
-    }
     if (($arguments->{body} eq ".resetbot")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
       $lastclear = "0-0-0";
       $message = $arguments->{who}.": Rubbet rensat inkl cache!";
-    }
-    if ($armed < 10) {
-      $armed++;
     }
 
     ( $day, $month, $year ) = (localtime)[3,4,5];
@@ -359,10 +151,6 @@ sub said {
       %msg = ();
       %hasnotwritten = ();
       %ytlock = ();
-      %resultcache = ();
-      $cachedtime = 0;
-      %cachedcontent = ();
-      $msgexpiry = 0;
     }
 
     if (($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)||($self->pocoirc->is_channel_halfop($arguments->{channel},'anna') == 1)) {
@@ -521,8 +309,6 @@ sub said {
 
         $checkerstring = $arguments->{body};
         $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
-        $checkerstring =~ s/\.morn/\.help/sgi;
-        $checkerstring =~ s/\.butkus/\.per/sgi;
         $checkerstring =~ s/\xE4/a/sg;
         $checkerstring =~ s/\xE5/a/sg;
         $checkerstring =~ s/\xF6/o/sg;
@@ -541,15 +327,15 @@ sub said {
         $checkerstring =~ s/9/q/sg;
         $checkerstring =~ s/\@/a/sg;
         $checkerstring =~ s/\$/s/sg;
-        $checkerstring = lc($checkerstring); 
+        $checkerstring = lc($checkerstring);
         $checkerstring =~ s/[^abcdefghijklmnopqrstuvwxyz]*//sgi;
         $checkerstring = substr($checkerstring, 0, 16);
         $bucket = $msg{$idnum};
         unless ($bucket =~ m/:/) {
           $bucket = "0:0:0:0:0";
         }
-        ($number, $expiry, $lastmessage,$kicked,$warned) = split(":",$bucket);
-       
+        ($number, $expiry, $lastmessage, $kicked, $warned) = split(":",$bucket);
+
         if ($expiry < time) {
           $newexpiry = time + 10;
           if ($lastmessage eq $checkerstring) {
@@ -562,20 +348,18 @@ sub said {
         }
         else
         {
+          $number = int($number);
+          $number++;
           if ($lastmessage eq $checkerstring) {
-            $addnum = $number + 2;
+            $number++;
           }
-          else
-          {
-            $addnum = $number + 1;
-          }
-          $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":".$kicked.":".$warned;
+          $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":".$kicked.":".$warned;
           if (int($number) > 4) {
             if ($kicked eq "1") {
               if ($warned eq "1") {
                 $self->mode($arguments->{channel}." +b ".$banmask);
                 $self->kick($arguments->{channel}, $arguments->{who}, "Du slutade inte spamma!");
-                $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:1"; #We won't reset as there might be multiple users with same hostname in channel.
+                $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":1:1"; #We won't reset as there might be multiple users with same hostname in channel.
                 $tempbody = "Bannade spammare ".$arguments->{who}." (host: ".$displayid.") fr\xE5n ".$arguments->{channel}."\n";
                 if ($istor eq "1") {
                   $tempbody = $tempbody . "Anv\xE4ndaren \xE4r en TOR-anv\xE4ndare, s\xE5 jag bannade genom att anv\xE4nda ".$banmask." .\n";
@@ -585,33 +369,33 @@ sub said {
               else
               {
                 $message = $arguments->{who}." ($displayid): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli BANNAD!";
-                $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:1";
+                $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":1:1";
               }
             }
             else
             {
               if ($warned eq "2") {
                 $self->kick($arguments->{channel}, $arguments->{who}, "Sluta spamma!");
-                $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":1:0";
+                $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":1:0";
                 transmitmail("Kickade spammare ".$arguments->{who}." (host: ".$displayid.") fr\xE5n ".$arguments->{channel}."\n");
               }
               else
               {
                 if ($warned eq "1") {
                   $message = $arguments->{who}." ($displayid): !!VARNING!! Om du forts\xE4tter att spamma kommer du att bli kickad!";
-                  $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":0:2";
+                  $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":0:2";
                 }
                 else
                 {
                   $message = $arguments->{who}." ($displayid): !!VARNING!! Var sn\xE4ll och sluta spamma!!";
-                  $msg{$idnum} = $addnum.":".$expiry.":".$checkerstring.":0:1";
+                  $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":0:1";
                 }
               }
             }# kicked check
           } # number check
         } #expiry check
       } #immunity check
-    }     
+    }
   }
   if (length($message) > 0) {
     if ($opmesssage eq "false") {
@@ -631,7 +415,7 @@ sub said {
   }
 }
 
-sub kicked {
+sub kicked { # This function is called everytime ANYONE is kicked in the channel.
   $self      = shift;
   $arguments = shift;
   ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
@@ -677,11 +461,247 @@ sub kicked {
   $hasnotwritten{$arguments->{kicked}} = 1;
 }
 
+
+sub do_opmsg { # This function corresponds to .opmsg **NOTICE** This isn't a sensitive function and can safely be granted to non-OPs. The only reason its locked to OPs is to prevent spamming the function. Equvalient of !report <message> in other channels, which in these channels, is open to everyone.
+  $human = $_[0];
+  $inmessage = $_[1];
+  $isop = $_[2];
+  $isown = $_[3];
+  if (($isop == 1)||($human eq "topcat")) {
+    if (($ytlock{'OPMSG!_FUNCTION'} < time)||($isown == 1)) {
+      $ytlock{'OPMSG!_FUNCTION'} = time + 60*60;
+      $inmessage =~ s/ä/\xE4/sg;
+      $inmessage =~ s/å/\xE5/sg;
+      $inmessage =~ s/ö/\xF6/sg;
+      $inmessage =~ s/Ä/\xC4/sg;
+      $inmessage =~ s/Å/\xC5/sg;
+      $inmessage =~ s/Ö/\xD6/sg;
+      transmitmail("OP-meddelande fr\xE5n ".$arguments->{who}." via OPMSG. Meddelandet \xE4r:\n".$inmessage."\n\n");
+      $message = $human.": Meddelande skickat!";
+    }
+    else
+    {
+      $message = $human.": .opmsg kan bara anv\xE4ndas en g\xE5ng i timmen!";
+    }
+  }
+  return $message;
+}
+
+
+sub do_youtube { # This function is called anytime a Youtube URL is encountered.
+  $ytid = $_[0];
+  if (int($ytlock{'YT!'.$ytid}) < time) {
+    $ytlock{'YT!'.$ytid} = time + 5*60;
+    if (length($ytlock{'YTC!'.$ytid}) > 1) {
+      $message = $ytlock{'YTC!'.$ytid};
+    }
+    else
+    {
+      $response = $ua->get('https://www.googleapis.com/youtube/v3/videos?id='.$ytid.'&key='.$botytkey.'&fields=items(snippet(title),contentDetails(duration),statistics(viewCount,likeCount,dislikeCount))&part=snippet,contentDetails,statistics');
+      $rbody = $response->decoded_content;
+      $ytline = "fail";
+      if ($rbody =~ m/^\{\n\s\"items\"\:\s\[\n\s\s\{\n\s\s\s\"snippet\"\:\s\{\n\s\s\s\s\"title\"\:\s\"(.*)\"\n\s\s\s\}\,\n\s\s\s\"contentDetails\"\:\s\{\n\s\s\s\s\"duration\"\:\s\"([PTHMS0123456789]*)\"\n\s\s\s\}\,\n\s\s\s\"statistics\"\:\s\{\n\s\s\s\s\"viewCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"likeCount\"\:\s\"(\d*)\"\,\n\s\s\s\s\"dislikeCount\"\:\s\"(\d*)\"\n\s\s\s\}\n\s\s\}\n\s\]\n\}$/s) {
+        $duration = $2;
+        $ytline = $1;
+        $views = $3;
+        $likes = $4;
+        $dislikes = $5;
+        if (int($likes) == 0) {
+          $likes = 1;
+        }
+        $percentage = int((int($likes) / int(int($likes) + int($dislikes)))*100);
+        $views = numprettify($views);
+        $duration =~ s/^PT(\d+H)?(\d+M)?(\d+S)?$/$1:$2:$3/;
+        $duration =~ s/[HMS]*//g;
+        ($hours, $minutes, $seconds) = split(":", $duration);
+        $hours = int($hours);
+        $minutes = int($minutes);
+        $seconds = int($seconds);
+        $subject = " visningar";
+        if (int($hours) > 0) {
+          if (int($minutes) < 10) {
+            $minutes = "0".$minutes;
+          }
+          if (int($seconds) < 10) {
+            $seconds = "0".$seconds;
+          }
+          $fulldur = "[".$hours.":".$minutes.":".$seconds."] ";
+        }
+        else
+        {
+          if (int($seconds) < 10) {
+            $seconds = "0".$seconds;
+          }
+          $fulldur = "[".$minutes.":".$seconds."] ";
+          if ($fulldur eq "[0:00] ") {
+            $fulldur = "[S\xC4NDNING] ";
+            $subject = " tittare";
+          }
+        }
+        $ytline =~ s/\\//sgi;
+        $ytline =~ s/ä/\xE4/sg;
+        $ytline =~ s/å/\xE5/sg;
+        $ytline =~ s/ö/\xF6/sg;
+        $ytline =~ s/Ä/\xC4/sg;
+        $ytline =~ s/Å/\xC5/sg;
+        $ytline =~ s/Ö/\xD6/sg;
+        $ytline = $ytline . " - " . $fulldur . $views . $subject . " (Gillas: ".$percentage."\%)";
+      }
+      unless ($ytline eq "fail") {
+        $ytlock{'YTC!'.$ytid} = $ytline;
+        $message = $ytline;
+      }
+    }
+  }
+  return $message;
+}
+
+
+sub do_swehack { # This function is called anytime a Swehack forum URL is encountered.
+  $threadid = $_[0];
+  if (int($ytlock{'SH!'.$threadid}) < time) {
+    $ytlock{'SH!'.$threadid} = time + 5*60;
+    if (length($ytlock{'SHC!'.$threadid}) > 1) {
+      $message = $ytlock{'SHC!'.$threadid};
+    }
+    else
+    {
+      $response = $ua->get('https://swehack.org/viewtopic.php?t='.$threadid);
+      $rbody = $response->decoded_content;
+      $sweline = "fail";
+      if ($rbody =~ m/<title>([^<]*)<\/title>/s) {
+        $sweline = $1;
+        if (($sweline =~ m/swehack - Ett svenskt diskussionsforum om IT/)&&($sweline =~ m/(Information|Logga in)/)) {
+          $sweline = "fail"; # Thread does not exist or are not accessible for guest, return nothing.
+        }
+        $sweline =~ s/\&auml\;/\xE4/sg;
+        $sweline =~ s/\&aring\;/\xE5/sg;
+        $sweline =~ s/\&ouml\;/\xF6/sg;
+        $sweline =~ s/\&Auml\;/\xC4/sg;
+        $sweline =~ s/\&Aring\;/\xC5/sg;
+        $sweline =~ s/\&Ouml\;/\xD6/sg;
+        $sweline =~ s/\&quot\;/\"/sg;
+      }
+      unless ($sweline eq "fail") {
+        $ytlock{'SHC!'.$threadid} = $sweline;
+        $message = $sweline;
+      }
+    }
+  }
+  return $message;
+}
+
+sub do_flashback { # This function is called anytime a Flashback forum URL is encountered.
+  $threadid = $_[0];
+  if (int($ytlock{'FB!'.$threadid}) < time) {
+    $ytlock{'FB!'.$threadid} = time + 5*60;
+    if (length($ytlock{'FBC!'.$threadid}) > 1) {
+      $message = $ytlock{'FBC!'.$threadid};
+    }
+    else
+    {
+      $response = $ua->get('https://www.flashback.org/'.$threadid);
+      $rbody = $response->decoded_content;
+      $fbline = "fail";
+      if ($rbody =~ m/<title>([^<]*)<\/title>/s) {
+        $fbline = $1;
+        if ($fbline eq "Flashback Forum") {
+          $fbline = "fail"; # If thread is put in garbage bin we can't see the title. So instead of returning useless text, return nothing.
+        }
+        $fbline =~ s/\&auml\;/\xE4/sg;
+        $fbline =~ s/\&aring\;/\xE5/sg;
+        $fbline =~ s/\&ouml\;/\xF6/sg;
+        $fbline =~ s/\&Auml\;/\xC4/sg;
+        $fbline =~ s/\&Aring\;/\xC5/sg;
+        $fbline =~ s/\&Ouml\;/\xD6/sg;
+        $fbline =~ s/\&quot\;/\"/sg;
+      }
+      unless ($fbline eq "fail") {
+        $ytlock{'FBC!'.$threadid} = $fbline;
+        $message = $fbline;
+      }
+    }
+  }
+  return $message:
+}
+
+
+sub do_cryptocurrency { # This function is called everytime somebody requests information about cryptocurrency.
+$inmess = $_[0];
+  if (int($ytlock{'CRYPTOCURRENCY!_FETCH'}) < time) {
+    $ytlock{'CRYPTOCURRENCY!_FETCH'} = time + 5*60;
+    if ($ytlock{'CRYPTOCURRENCY!_CACHE'} < time) {
+      $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=40');
+      $rbody = $response->decoded_content;
+      $rbody =~ s/\n//sgi;
+      $rbody =~ s/\r//sgi;
+      $rbody =~ s/\s//sgi;
+      $rbody =~ s/\[\{\"id\":\"(.*)\}\]/$1/sgi;
+      @coindata = split(/\},\{\"id\":\"/, $rbody);
+      foreach $coin (@coindata) {
+        if (($coin =~ m/^bitcoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_btc'} = "[BTC] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^litecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_ltc'} = "[LTC] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^monero\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_xmr'} = "[XMR] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^bitcoin-cash\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_bch'} = "[BCH] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^ethereum\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_eth'} = "[ETH] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^ripple\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_xrp'} = "[XRP] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+        if (($coin =~ m/^dogecoin\"/)&&($coin =~ m/\"price_usd\":\"([^\"]*)\"(.*)\"price_sek\":\"([^\"]*)\"/)) {
+          $ytlock{'CC!_doge'} = "[DOGE] \$".numprettify($1)." / ".numprettify($3)." kr";
+        }
+      }
+      $ytlock{'CRYPTOCURRENCY!_CACHE'} = time + (30*60);
+      $cached = "[live]";
+    }
+    else
+    {
+      $timeleft = $ytlock{'CRYPTOCURRENCY!_CACHE'} - time;
+      $timeleft + 120;
+      $minutesleft = int($timeleft / 60);
+      $cached = "[cachad ${minutesleft}m]";
+    }
+    if (($inmess eq ".btc")||($inmess eq ".cc")) {
+      $message = "$ytlock{'CC!_btc'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_xrp'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".ltc") {
+      $message = "$ytlock{'CC!_ltc'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_xrp'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".xmr") {
+      $message = "$ytlock{'CC!_xmr'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_xrp'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".bch") {
+      $message = "$ytlock{'CC!_bch'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_xrp'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".eth") {
+      $message = "$ytlock{'CC!_eth'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_xrp'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".xrp") {
+      $message = "$ytlock{'CC!_xrp'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_doge'} | $cached";
+    }
+    if ($inmess eq ".doge") {
+      $message = "$ytlock{'CC!_doge'} | $ytlock{'CC!_xmr'} | $ytlock{'CC!_ltc'} | $ytlock{'CC!_btc'} | $ytlock{'CC!_eth'} | $ytlock{'CC!_bch'} | $ytlock{'CC!_xrp'} | $cached";
+    }
+  }
+  return $message;
+}
+
+
 sub transmitmail { #Sends a simple mail. Text in first argument. Log and the rest of text is included automatically.
   $mailbody = $_[0];
   $mailsubject = $_[0];
   $mailsubject =~ s/\n//sgi;
-  $mailsubject = substr($mailsubject, 0, 50);
+  $mailsubject = substr($mailsubject, 0, 75);
   $mailbody = $mailbody . "H\xE4r kommer loggen:\n\n";
   foreach $line (@log) {
     $mailbody = $mailbody . $line . "\n";
