@@ -84,8 +84,8 @@ sub said {
       $message = do_flashback($1.$2);
     }
 
-    if (($arguments->{body} =~ m/swehack\.org\/viewtopic\.php\?/i)&&($arguments->{body} =~ m/t=(\d+)/)) {
-      $message = do_swehack($1);
+    if (($arguments->{body} =~ m/swehack\.org\/viewtopic\.php\?/i)&&($arguments->{body} =~ m/(t=|p=)(\d+)/)) {
+      $message = do_swehack($1.$2);
     }
 
     if (($arguments->{body} =~ m/youtube\.com\/watch\?[^v]*v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
@@ -93,7 +93,7 @@ sub said {
     }
 
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
-      $message = do_opmessage($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
+      $message = do_opmsg($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
     }
 
     $opmessage = "false";
@@ -566,7 +566,7 @@ sub do_swehack { # This function is called anytime a Swehack forum URL is encoun
     }
     else
     {
-      $response = $ua->get('https://swehack.org/viewtopic.php?t='.$threadid);
+      $response = $ua->get('https://swehack.org/viewtopic.php?'.$threadid);
       $rbody = $response->decoded_content;
       $sweline = "fail";
       if ($rbody =~ m/<title>([^<]*)<\/title>/s) {
@@ -622,7 +622,7 @@ sub do_flashback { # This function is called anytime a Flashback forum URL is en
       }
     }
   }
-  return $message:
+  return $message;
 }
 
 
