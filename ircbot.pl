@@ -100,7 +100,6 @@ sub said {
     }
 
     if (($arguments->{body} eq ".shutdown")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
-      transmitmail("Hej. ".$arguments->{who}." beg\xE4rde ett avslut.\n");
       $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
     }
 
