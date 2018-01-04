@@ -387,7 +387,7 @@ sub said {
                 }
                 else
                 {
-                  $message = $arguments->{who}." ($displayid): !!VARNING!! Var sn\xE4ll och sluta spamma!!";
+                  $message = $arguments->{who}." ($displayid): !!VARNING!! Var sn\xE4ll och sluta spamma! V\xE4nta g\xE4rna n\xE5gra sekunder innan du skickar igen och ta det lite lungt.";
                   $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":0:1";
                 }
               }
