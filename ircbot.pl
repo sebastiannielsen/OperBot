@@ -73,12 +73,29 @@ sub said {
       $message = do_youtube($1);
     }
 
+    if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
+      $email = $1;
+      if (int($ytlock{$email}) < time) {
+        $ytlock{$email} = time + 5*60;
+        $hashoutput = "";
+        $rawresults = `/root/bot/brcompilation_hashed/query.sh $email`;
+        $rawresults =~ s/\n/,/sgi;        
+        if (length($rawresults) > 16) {
+          $message = $arguments->{who}.": $email sha1: ".$rawresults;
+        }
+        else
+        {
+          $message = $arguments->{who}.": Tyv\xE4rr, jag hittade inga hashar f\xF6r $email i min databas.";
+        }
+      }
+    }
+
 
     $opmessage = "false";
     if ($arguments->{body} eq ".help") {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog";
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email>";
       if (($isop == 1)||($ishp == 1)) {
        $message = $message . "\n OP:: .shutdown | .resetbot";
        $opmessage = "true";
@@ -99,13 +116,21 @@ sub said {
       }
     }
 
-    if (($arguments->{body} eq ".shutdown")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
-      $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
+    if ($arguments->{body} eq ".shutdown") {
+      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+      $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+      if (($ishp == 1)||($isop == 1)) {
+        $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
+      }
     }
 
-    if (($arguments->{body} eq ".resetbot")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
-      $lastclear = "0-0-0";
-      $message = $arguments->{who}.": Rubbet rensat inkl cache!";
+    if ($arguments->{body} eq ".resetbot") {
+      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+      $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+      if (($ishp == 1)||($isop == 1)) {
+        $lastclear = "0-0-0";
+        $message = $arguments->{who}.": Rubbet rensat inkl cache!";
+      }
     }
 
     ( $day, $month, $year ) = (localtime)[3,4,5];
