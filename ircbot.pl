@@ -75,6 +75,7 @@ sub said {
 
     if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
       $email = $1;
+      $email =~ s/\\//sgi;
       if (int($ytlock{$email}) < time) {
         $ytlock{$email} = time + 5*60;
         $hashoutput = "";
