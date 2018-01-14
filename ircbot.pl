@@ -73,7 +73,7 @@ sub said {
       $message = do_youtube($1);
     }
 
-    if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
+    if ($arguments->{body} =~ m/^.pwdb ([a-zA-Z0-9.!+=?^_-]+\@[.a-zA-Z0-9-]+)$/) {
       $email = $1;
       $email =~ s/\\//sgi;
       if (int($ytlock{$email}) < time) {
