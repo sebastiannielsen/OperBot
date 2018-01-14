@@ -142,10 +142,10 @@ sub said {
 
   }
   if (length($message) > 0) {
-    if ($opmesssage eq "false") {
+    if ($opmessage eq "false") {
       $message =~ s/\r//sgi;
       $message =~ s/\n//sgi;
-      $message = substr($message,0,150);
+      $message = substr($message,0,250);
     }
     push(@log, $timestampprefix."] <SebbeBot> $message");
     if ($#log > 20) {
