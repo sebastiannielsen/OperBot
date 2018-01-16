@@ -1,8 +1,6 @@
 #!/usr/local/bin/perl
 
 use LWP::UserAgent;
-use MIME::Entity;
-use Email::Date::Format 'email_date';
 
 
 package SebbeBot;
@@ -77,10 +75,13 @@ sub said {
     if (($arguments->{body} =~ m/^.pwdb (.+)$/)&&(valid $1)) {
       $email = $1;
       $email =~ s/\\//sgi;
+      $email =~ s/\s//sgi;
+      $email =~ s/&&//sgi;
+      $email =~ s/|//sgi;
       if (int($ytlock{$email}) < time) {
         $ytlock{$email} = time + 5*60;
         $hashoutput = "";
-        $rawresults = `/root/bot/brcompilation_hashed/query.sh $email`;
+        $rawresults = `/root/bot/brcompilation_hashed/query.sh \"$email\"`;
         $rawresults =~ s/\n/,/sgi;        
         if (length($rawresults) > 16) {
           $message = $arguments->{who}.": $email sha1: ".$rawresults;
@@ -98,10 +99,10 @@ sub said {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
       $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email>";
-      if (($isop == 1)||($ishp == 1)) {
-       $message = $message . "\n OP:: .shutdown | .resetbot";
-       $opmessage = "true";
-      }
+ #     if (($isop == 1)||($ishp == 1)) {
+ #      $message = $message . "\n OP:: .shutdown | .resetbot";
+ #      $opmessage = "true";
+ #     }
     }
 
     if ($arguments->{body} eq ".fetchlog") {
@@ -118,13 +119,13 @@ sub said {
       }
     }
 
-    if ($arguments->{body} eq ".shutdown") {
-      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
-      $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-      if (($ishp == 1)||($isop == 1)) {
-        $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
-      }
-    }
+#    if ($arguments->{body} eq ".shutdown") {
+#      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+#      $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+#      if (($ishp == 1)||($isop == 1)) {
+#        $self->shutdown("Avslut beg\xE4rt av ".$arguments->{who});
+#      }
+#    }
 
     if ($arguments->{body} eq ".resetbot") {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
