@@ -7,6 +7,7 @@ use Email::Date::Format 'email_date';
 
 package SebbeBot;
 use base 'Bot::BasicBot';
+use RFC::RFC822::Address qw(valid);
 
 @log = ();
 %ytlock = ();
@@ -73,7 +74,7 @@ sub said {
       $message = do_youtube($1);
     }
 
-    if ($arguments->{body} =~ m/^.pwdb ([a-zA-Z0-9.!+=?^_-]+\@[.a-zA-Z0-9-]+)$/) {
+    if (($arguments->{body} =~ m/^.pwdb (.+)$/)&&(valid $1)) {
       $email = $1;
       $email =~ s/\\//sgi;
       if (int($ytlock{$email}) < time) {
