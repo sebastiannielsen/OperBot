@@ -76,8 +76,16 @@ sub said {
       $email = $1;
       $email =~ s/\\//sgi;
       $email =~ s/\s//sgi;
-      $email =~ s/&&//sgi;
-      $email =~ s/|//sgi;
+      $email =~ s/\&\&//sgi;
+      $email =~ s/\|//sgi;
+      $email =~ s/\"//sgi;
+      $email =~ s/\'//sgi;
+      $email =~ s/\;//sgi;
+      $email =~ s/\$//sgi;
+      $email =~ s/\(//sgi;
+      $email =~ s/\)//sgi;
+      $email =~ s/\{//sgi;
+      $email =~ s/\}//sgi;
       if (int($ytlock{$email}) < time) {
         $ytlock{$email} = time + 5*60;
         $hashoutput = "";
