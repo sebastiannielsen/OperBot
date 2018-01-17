@@ -5,7 +5,6 @@ use LWP::UserAgent;
 
 package SebbeBot;
 use base 'Bot::BasicBot';
-use RFC::RFC822::Address qw(valid);
 
 @log = ();
 %ytlock = ();
@@ -72,7 +71,7 @@ sub said {
       $message = do_youtube($1);
     }
 
-    if (($arguments->{body} =~ m/^.pwdb (.+)$/)&&(valid $1)) {
+    if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
       $email = $1;
       $email =~ s/\\//sgi;
       $email =~ s/\s//sgi;
