@@ -89,7 +89,7 @@ sub said {
       if (int($ytlock{$email}) < time) {
         $ytlock{$email} = time + 5*60;
         $hashoutput = "";
-        $rawresults = `/root/bot/brcompilation_hashed/query.sh \"$email\"`;
+        $rawresults = `/var/secure_files/bot/brcompilation_hashed/query.sh \"$email\"`;
         $rawresults =~ s/\n/,/sgi;        
         if (length($rawresults) > 16) {
           $message = $arguments->{who}.": $email sha1: ".$rawresults;
