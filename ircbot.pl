@@ -621,9 +621,27 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
         }
         transmitmail("Deoppade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som spamkickar ".$arguments->{kicked}." utan anledning.\n");
       }
+      else
+      { # Manual kick from this OP was legit and according with the rules. Record this manual kick in the bot so if the user begins to spam as an
+        # retaliation to the kick, the user will be banned faster.
+        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arguments->{kicked}));
+        $bucket = $msg{$uidn};
+        unless ($bucket =~ m/:/) {
+          $bucket = "0:0:0:0:0";
+        }
+        ($number, $exp, $lmsg, $kicked, $warned) = split(":", $bucket);
+        if ($warned eq "2") {
+          $msg{$uidn} = $number.":".$exp.":".$lmsg.":1:1";
+        }
+        else
+        {
+          $msg{$uidn} = $number.":".$exp.":".$lmsg.":1:".$warned;
+        }
+      }
     }
   }
   $hasnotwritten{$arguments->{kicked}} = 1;
+  return undef;
 }
 
 sub chanjoin { # This function is called everytime someone joins
@@ -640,7 +658,7 @@ sub chanjoin { # This function is called everytime someone joins
     $hourlog = "0".$hourlog;
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
-  push(@log, $timestampprefix. "] *** ".$arguments->{who}." joinade ".$arguments->{channel}.".";
+  push(@log, $timestampprefix. "] *** ".$arguments->{who}." joinade ".$arguments->{channel}.".");
   if ($#log > 40) {
     shift(@log);
   }
@@ -659,6 +677,7 @@ sub chanjoin { # This function is called everytime someone joins
     rename("/var/spool/asterisk/tmp/irc.".$vct.$$.".call","/var/spool/asterisk/outgoing/irc.a".$vct.$$.".call");
     $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Ringer upp Sebastian p\xE5 hans telefon nu...");
   }
+  return undef;
 } 
 
 sub chanpart { # This function is called everytime someone joins
@@ -675,13 +694,38 @@ sub chanpart { # This function is called everytime someone joins
     $hourlog = "0".$hourlog;
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
-  push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".";
+  push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".");
   if ($#log > 40) {
     shift(@log);
   }
   if ($iswatched{$arguments->{who}} eq "1") {
     transmitmail("Den vaktade personen ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}."\n");
   }
+  return undef;
+}
+
+sub userquit { # This function is called everytime someone joins
+  $self      = shift;
+  $arguments = shift;
+  ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+  if (length($seclog) == 1) {
+    $seclog = "0".$seclog;
+  }
+  if (length($minlog) == 1) {
+    $minlog = "0".$minlog;
+  }
+  if (length($hourlog) == 1) {
+    $hourlog = "0".$hourlog;
+  }
+  $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
+  push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".");
+  if ($#log > 40) {
+    shift(@log);
+  }
+  if ($iswatched{$arguments->{who}} eq "1") {
+    transmitmail("Den vaktade personen ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}."\n");
+  }
+  return undef;
 }
 
 
