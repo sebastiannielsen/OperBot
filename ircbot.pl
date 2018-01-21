@@ -24,6 +24,11 @@ $botytkey = <YTKEY>;
 close(YTKEY);
 $botytkey =~ s/\n//sgi;
 
+open(GHOST, "./autoghost.txt");
+$ghostpassword = <GHOST>;
+close(GHOST);
+$ghostpassword =~ s/\n//sgi;
+
 
 sub said {
   $self      = shift;
@@ -54,6 +59,21 @@ sub said {
     else
     {
       $armed++;
+    }
+
+    $hostname = $self->pocoirc->nick_long_form($arguments->{who});
+    ($nickreal, $hostpart) = split(/\@/, $hostname);
+     if (lc($arguments->{who}) eq "chloe") {
+      if ($hostpart ne "chloe.chloe") {
+        $self->kick($arguments->{channel}, $arguments->{who}, "Omoget att fakea chloe");
+        transmitmail("Kickade omogen person som fakenickar chloe med host (".$hostpart.").\n");
+      }
+    }
+    if (lc($arguments->{who}) eq "sebastian") {
+      if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+        $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
+        transmitmail("Ghostade omogen person som fakenickar dig med host (".$hostpart.").\n");
+      }
     }
 
     $hasnotwritten{$arguments->{who}} = 0;
@@ -132,6 +152,13 @@ sub said {
     }
 
 
+    if (($arguments->{body} =~ m/^\.logtofile (.+)/)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
+      open(LOGFILE, ">>logtofile.txt");
+      print LOGFILE $1."\n";
+      close(LOGFILE);
+      $message = $arguments->{who}.": Loggade ".$1." till /var/secure_files/bot/logtofile.txt";
+    }
+
     if (($arguments->{body} =~ m/^\.watch (.+)/)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
       if ($1 eq "all") {
         %iswatched = ();
@@ -184,7 +211,7 @@ sub said {
        $opmessage = "true";
       }
       if ($isowner == 1) {
-       $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick> | .watch <namn>";
+       $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick> | .watch <namn> | .logtofile <text>";
        $opmessage = "true";
       }
     }
@@ -290,11 +317,14 @@ sub said {
           $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
           $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
           $i = 0;
+          $max = 0;
+          if ($#log > 18) {
+            $max = $#log - 19;
+          }
           foreach $msgline (@log) {
-            $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
             $i++;
-            if ($i > 20) {
-              last;
+            if ($i > $max) {
+              $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
             }
           }
         }
@@ -644,6 +674,7 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
   return undef;
 }
 
+
 sub chanjoin { # This function is called everytime someone joins
   $self      = shift;
   $arguments = shift;
@@ -676,6 +707,21 @@ sub chanjoin { # This function is called everytime someone joins
     system("chgrp asterisk /var/spool/asterisk/tmp/irc.".$vct.$$.".call");
     rename("/var/spool/asterisk/tmp/irc.".$vct.$$.".call","/var/spool/asterisk/outgoing/irc.a".$vct.$$.".call");
     $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Ringer upp Sebastian p\xE5 hans telefon nu...");
+  }
+
+  $hostname = $self->pocoirc->nick_long_form($arguments->{who});
+  ($nickreal, $hostpart) = split(/\@/, $hostname);
+   if (lc($arguments->{who}) eq "chloe") {
+    if ($hostpart ne "chloe.chloe") {
+      $self->kick($arguments->{channel}, $arguments->{who}, "Omoget att fakenicka chloe");
+      transmitmail("Kickade omogen person som fakenickar chloe med host (".$hostpart.").\n");
+    }
+  }
+  if (lc($arguments->{who}) eq "sebastian") {
+    if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+      $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
+      transmitmail("Ghostade omogen person som fakenickar dig med host (".$hostpart.").\n");
+    }
   }
   return undef;
 } 
