@@ -62,17 +62,20 @@ sub said {
     }
 
     $hostname = $self->pocoirc->nick_long_form($arguments->{who});
+    ($istor, $idnum, $displayid, $banmask) = getidfromhost($hostname);
     ($nickreal, $hostpart) = split(/\@/, $hostname);
      if (lc($arguments->{who}) eq "chloe") {
       if ($hostpart ne "chloe.chloe") {
+        $self->mode($arguments->{channel}." +b ".$banmask);
         $self->kick($arguments->{channel}, $arguments->{who}, "Omoget att fakea chloe");
-        transmitmail("Kickade omogen person som fakenickar chloe med host (".$hostpart.").\n");
+        transmitmail("Bannade omogen person som fakenickar chloe med host (".$hostpart.").\n");
       }
     }
     if (lc($arguments->{who}) eq "sebastian") {
       if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+        $self->mode($arguments->{channel}." +b ".$banmask);
         $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
-        transmitmail("Ghostade omogen person som fakenickar dig med host (".$hostpart.").\n");
+        transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
       }
     }
 
@@ -710,17 +713,20 @@ sub chanjoin { # This function is called everytime someone joins
   }
 
   $hostname = $self->pocoirc->nick_long_form($arguments->{who});
+  ($istor, $idnum, $displayid, $banmask) = getidfromhost($hostname);
   ($nickreal, $hostpart) = split(/\@/, $hostname);
    if (lc($arguments->{who}) eq "chloe") {
     if ($hostpart ne "chloe.chloe") {
+      $self->mode($arguments->{channel}." +b ".$banmask);
       $self->kick($arguments->{channel}, $arguments->{who}, "Omoget att fakenicka chloe");
-      transmitmail("Kickade omogen person som fakenickar chloe med host (".$hostpart.").\n");
+      transmitmail("Bannade omogen person som fakenickar chloe med host (".$hostpart.").\n");
     }
   }
   if (lc($arguments->{who}) eq "sebastian") {
     if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+      $self->mode($arguments->{channel}." +b ".$banmask);
       $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
-      transmitmail("Ghostade omogen person som fakenickar dig med host (".$hostpart.").\n");
+      transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
     }
   }
   return undef;
