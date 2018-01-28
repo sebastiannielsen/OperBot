@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 package SebbeBot;
 use base 'Bot::BasicBot';
@@ -12,6 +12,7 @@ use Email::Date::Format 'email_date';
 %hasnotwritten = ();
 %iswatched = ();
 $armed = 0;
+$defcon = "false";
 
 @rafarray = ("jag vill känna långlivad organisk glädje och lyfta denna förbannelsen", "du måste stirra in i denna kuben och FÖRSTÅ","jag visar dig de otänkbra!!","jag är ett hungerigt barn","mitt liv är i förödelse","kompster", "skåda den starkaste mjuk öra någonsin","ok kompis det är bara du och jag", "han kommer bli en stark pojke","glad jlu", "välkommen till sceniskt räfland", "vi har tassar,vi har äpple", "vad mer kan man begära", "kryddig het räf", "förståeligt","den sista biten", "jag ser, i den vacker dröm","jag vaknar, och har glömt","någonting fattas", "inge tålamod","när jag var hälften som du, var jag så här liten","men dubbelt utav mig är inte som nu","hej, jag är spöke som är efter din själ", "kan vi bli vän", "det är för riskabelt", "okej nu är det bara du och jag", "jag representerar denna världens hopp", "förtälj om din vishet", "jag är faktiskt bara liten", "nu går vi och spökar en kamrat", "tystnad mina barn", "jag bringar er en fest", "vilken förtjusande melodi", "jag äger tre flöjter", "tuut", "jag flyter förbi med goda nyheter", "wow vad är det","jag har upptäckt meningen", "meningen till vad", "mysterium", "absolut icke", "???", "!!!", "löf i mund dialekt", "ånga i ansikte dialekt", "varför gör du detta mot mig", "har du övervägt läg1man1", "vad är läg1man1", "gratulationer", "jag spökar ditt förflutet", "jag spökar ditt nuvarande", "jag !! spökar nästan", "jag vill inte spräcka din bubbla men", "boop", "tjena vänner kolla in denna ljuvliga bläckfisgen", "håll denna vännen", "fantastiskt", "nu kan vi observera gatorn medans den förföljer sitt byte", "den kommer mumsa!!","mums", "låt oss diskutera alla våra kunskaper och planer", "vänta tyst!!", "å nej", "wow det finns så många vacker klänning", "vilken ska jag välja", "ursäkta, det inte okej, beep och boop passar inte", "är du ok", "fixa", "T A C K F Ö R A T T D U L O G G A D E I N", "det är det enda sättet att hitta marshmeln", "min skapare vi har funnit", "det är fantastiskt", "synnerligen, helt säkert", "ojsan vad är det där","nyoom", "ooooooooooooooooooooooooooooooooooooo", "det jag, jag är molnet, titta: fhu~", "fhu~", "låt mig berätta, vän, jag vet vad det","tassfluff", "vänta det är inte längre ok", "bort från mig hunde, jag är ASFALT", "är du någonlunda kylig vill du ha en halsduk", "denna är till dig", "jag är en riktig hiss!!", "ok farväl vän", "nyoom", "låt oss gifta oss!!","ok!!","vi är gifta nu!!","ja!!", "låt oss gå till djurparken!", "hurra!");
 @lovea = ("pussar","slickar","gosar","smeker","lindar armarna om","kramar","klappar","myser","sniffar","nafsar","gnuggar","eskimåkysser");
@@ -72,7 +73,7 @@ sub said {
       }
     }
     if (lc($arguments->{who}) eq "sebastian") {
-      if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+      if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-ep8.85g.agg3sg.IP")) {
         $self->mode($arguments->{channel}." +b ".$banmask);
         $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
         transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
@@ -210,7 +211,7 @@ sub said {
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
       $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn>";
       if (($isop == 1)||($ishp == 1)) {
-       $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg>";
+       $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon";
        $opmessage = "true";
       }
       if ($isowner == 1) {
@@ -490,6 +491,10 @@ sub said {
             {
               $stat = "hasnotwritten=0";
             }
+            if ($defcon eq "true") {
+              $warned = "1";
+              $kicked = "1";
+            }
             $message = $arguments->{who}.": (".$uidn.") kicked=".$kicked." warned=".$warned." tor=".$uist." (".$user.") ".$stat." immunity=".$immunity." (OP=".int($isop)." HOP=".int($ishp)." ADM=".int($isad)." OWN=".int($isow)." VO=".int($isv)." IOP=".int($ircop)." IGN=".int($ign).").";
           }
           else
@@ -501,19 +506,33 @@ sub said {
           %msg = ();
           $message = $arguments->{who}.": Rensade alla anv\xE4ndare.";
         }
+        if ($arguments->{body} eq ".defcon") {
+          if ($defcon eq "false") {
+            $defcon = "true";
+            $message = "VARNING! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Ni andra - var f\xF6rsiktiga - Inga varningar/kicks kommer ges vid spam!";
+          }
+          else
+          {
+            $defcon = "false";
+            $message = "INFORMATION! Undantagstillst\xE5nd har upph\xF6rt. Ni som \xE4r anslutna via TOR kan skriva som vanligt, och normala varningar/kicks kommer ges vid spam!";
+          }
+        }
       }
 
       if ($immunity eq "false") {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
         $checkerstring = $arguments->{body};
-        $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
-        $checkerstring =~ s/\.butkus/\.per/sgi;
         $checkerstring =~ s/\xE4/a/sg;
         $checkerstring =~ s/\xE5/a/sg;
         $checkerstring =~ s/\xF6/o/sg;
         $checkerstring =~ s/\xC4/a/sg;
         $checkerstring =~ s/\xC5/a/sg;
         $checkerstring =~ s/\xD6/o/sg;
+        $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
+        $checkerstring =~ s/\.butkus/\.per/sgi;
+        $checkerstring =~ s/\.raf/\.per/sgi;
+        $checkerstring =~ s/\.alska/\.bestam/sgi;
+        $checkerstring =~ s/\.lotto/\.per/sgi;      
         $checkerstring =~ s/0/o/sg;
         $checkerstring =~ s/1/l/sg;
         $checkerstring =~ s/2/z/sg;
@@ -553,6 +572,10 @@ sub said {
             $number++;
           }
           $msg{$idnum} = $number.":".$expiry.":".$checkerstring.":".$kicked.":".$warned;
+          if ($defcon eq "true") {
+            $kicked = "1";
+            $warned = "1";
+          }
           if (int($number) > 4) {
             if ($kicked eq "1") {
               if ($warned eq "1") {
@@ -706,8 +729,6 @@ sub chanjoin { # This function is called everytime someone joins
     print TMPFILE "Data: conf-hasjoin\n";
     close(TMPFILE);
     system("chmod 777 /var/spool/asterisk/tmp/irc.".$vct.$$.".call");
-    system("chown asterisk /var/spool/asterisk/tmp/irc.".$vct.$$.".call");
-    system("chgrp asterisk /var/spool/asterisk/tmp/irc.".$vct.$$.".call");
     rename("/var/spool/asterisk/tmp/irc.".$vct.$$.".call","/var/spool/asterisk/outgoing/irc.a".$vct.$$.".call");
     $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Ringer upp Sebastian p\xE5 hans telefon nu...");
   }
@@ -723,7 +744,7 @@ sub chanjoin { # This function is called everytime someone joins
     }
   }
   if (lc($arguments->{who}) eq "sebastian") {
-    if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-1kk.qek.agg3sg.IP")) {
+    if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-ep8.85g.agg3sg.IP")) {
       $self->mode($arguments->{channel}." +b ".$banmask);
       $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
       transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
@@ -1028,7 +1049,7 @@ sub transmitmail { #Sends a simple mail. Text in first argument. Log and the res
   $mailbody = $mailbody . "\nMed v\xE4nliga h\xE4lsningar, Anna";
   $maildate = email_date;
   $mime = MIME::Entity->build(Type => "text/plain; charset=iso-8859-1", From => "Boten Anna <anna\@sebbe.eu>", To => "sebastian\@sebbe.eu", Subject => $mailsubject, Date => $maildate, Data => $mailbody);
-  open(MAIL, "| sudo -H -u server /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"");
+  open(MAIL, "|/usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf -m \"\"");
   $mime->print(\*MAIL);
   close MAIL;
 }
@@ -1045,7 +1066,7 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   if ($partbb =~ m/^\.[^.]*$/) {
     $partbb = $partb; # If a user has a rhost like mycompany.com with cloak disabled (-x) we risk banning the whole .com domain. This avoids it.
   }
-  if (($partb eq "swehack-q25.4uh.b8obtf.IP")||($partb eq "127.0.0.1")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
+  if ((($partb eq "swehack-q25.4uh.b8obtf.IP")||($partb eq "127.0.0.1"))&&($defcon eq "false")) { # Host is TOR .onion node. To ban these, we need to rely on usernames instead.
      $banmask = "*!*".$partab."\@*".$partbb;
      $istor = "1";
      $idnum = $partab.$partbb; #Counting spam must also be done differently so 2 TOR users discussing things does not trigger the spam kick/ban system.
