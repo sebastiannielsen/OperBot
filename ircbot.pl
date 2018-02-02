@@ -62,23 +62,6 @@ sub said {
       $armed++;
     }
 
-    $hostname = $self->pocoirc->nick_long_form($arguments->{who});
-    ($istor, $idnum, $displayid, $banmask) = getidfromhost($hostname);
-    ($nickreal, $hostpart) = split(/\@/, $hostname);
-     if (lc($arguments->{who}) eq "chloe") {
-      if ($hostpart ne "chloe.chloe") {
-        $self->mode($arguments->{channel}." +b ".$banmask);
-        $self->kick($arguments->{channel}, $arguments->{who}, "Omoget att fakea chloe");
-        transmitmail("Bannade omogen person som fakenickar chloe med host (".$hostpart.").\n");
-      }
-    }
-    if (lc($arguments->{who}) eq "sebastian") {
-      if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-ep8.85g.agg3sg.IP")) {
-        $self->mode($arguments->{channel}." +b ".$banmask);
-        $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
-        transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
-      }
-    }
 
     $hasnotwritten{$arguments->{who}} = 0;
 
@@ -211,12 +194,54 @@ sub said {
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
       $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn>";
       if (($isop == 1)||($ishp == 1)) {
-       $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon";
+       $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .qb <nick> | .qt <nick>";
        $opmessage = "true";
       }
       if ($isowner == 1) {
        $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick> | .watch <namn> | .logtofile <text>";
        $opmessage = "true";
+      }
+    }
+
+    if ($arguments->{body} =~ m/^\.(qt|qb) (.+)/) {
+      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+      if ($isop == 1) {
+        $botban = lc($2);
+        $cmd = $1;
+        $botban =~ s/\@//sgi;
+        $botban =~ s/\!//sgi;
+        if (length($botban) > 0) {
+          @allusers = $self->channel_list($arguments->{channel});
+          if ($cmd eq "qt") {
+            $self->mode($arguments->{channel}." +b ".$botban."*!".$botban."*\@*.4uh.b8obtf.IP");
+            $dotor = "true";
+          }
+          else
+          {
+            $self->mode($arguments->{channel}." +b ".$botban."*!".$botban."*\@*");
+            $dotor = "false";
+          }
+          $botfound = 0;
+          foreach $usernick (@allusers) {
+            $ufh = lc($self->pocoirc->nick_long_form($usernick));
+            ($un, $uh) = split(/\@/, $ufh);
+            ($bn, $bu) = split(/\!/, $un);
+            if ((substr($bn,0,length($botban)) eq $botban)&&(substr($bu,0,length($botban)) eq $botban)) {
+              if ($dotor eq "true") {
+                if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
+                  $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
+                  $botfound++;
+                }
+              }
+              else
+              {
+                $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
+                $botfound++;
+              }
+            }
+          }
+          $message = $arguments->{who}.": Hittade och bannade ".$botfound." spambottar i kanalen.";
+        }
       }
     }
 
@@ -633,6 +658,43 @@ sub said {
   else
   {
     return undef;
+  }
+}
+
+sub nick_change {
+  ($self, $oldnick, $newnick) = @_;
+
+  ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+  if (length($seclog) == 1) {
+    $seclog = "0".$seclog;
+  }
+  if (length($minlog) == 1) {
+    $minlog = "0".$minlog;
+  }
+  if (length($hourlog) == 1) {
+    $hourlog = "0".$hourlog;
+  }
+  $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
+  push(@log, $timestampprefix. "] *** ".$oldnick." bytte namn till ".$newnick);
+  if ($#log > 40) {
+    shift(@log);
+  }
+  $hostname = $self->pocoirc->nick_long_form($newnick);
+  ($istor, $idnum, $displayid, $banmask) = getidfromhost($hostname);
+  ($nickreal, $hostpart) = split(/\@/, $hostname);
+  if (lc($newnick) eq "chloe") {
+    if ($hostpart ne "chloe.chloe") {
+      $self->mode("#sebastian +b ".$banmask);
+      $self->kick("#sebastian", $newnick, "Omoget att fakea chloe");
+      transmitmail("Bannade omogen person som fakenickar chloe med host (".$hostpart.").\n");
+    }
+  }
+  if (lc($newnick) eq "sebastian") {
+    if (($hostpart ne "dns2.sebbe.eu")&&($hostpart ne "swehack-ep8.85g.agg3sg.IP")) {
+      $self->mode("#sebastian +b ".$banmask);
+      $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
+      transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
+    }
   }
 }
 
