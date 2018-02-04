@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 
 package SebbeBot;
-use base 'Bot::BasicBot';
-use LWP::UserAgent;
-use MIME::Entity;
-use Email::Date::Format 'email_date';
+
+ use base 'Bot::BasicBot';
+ use LWP::UserAgent;
+ use MIME::Entity;
+ use Email::Date::Format 'email_date';
 
 @log = ();
 %ytlock = ();
@@ -29,12 +30,14 @@ open(YTKEY, "./botkey.txt");
 $botytkey = <YTKEY>;
 close(YTKEY);
 $botytkey =~ s/\n//sgi;
-
+open(WKEY, "./wkey.txt");
+$wkey = <WKEY>;
+close(WKEY);
+$wkey =~ s/\n//sgi;
 open(GHOST, "./autoghost.txt");
 $ghostpassword = <GHOST>;
 close(GHOST);
 $ghostpassword =~ s/\n//sgi;
-
 
 sub said {
   $self      = shift;
@@ -90,6 +93,9 @@ sub said {
     }
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
       $message = do_opmsg($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
+    }
+    if ($arguments->{body} =~ m/^\.v(\xE4|ä)der (.+)/) {
+      $message = do_weather($arguments->{who}, $2);
     }
     if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
       $email = $1;
@@ -156,7 +162,7 @@ sub said {
     }
 
     if ($arguments->{body} =~ m/^\.(\xE4|ä)lska (.+)/) {
-      $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." \xA2\xBE";
+      $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." <3";
       $qemessage =~ s/ä/\xE4/sg;
       $qemessage =~ s/å/\xE5/sg;
       $qemessage =~ s/ö/\xF6/sg;
@@ -170,6 +176,7 @@ sub said {
 
     if ($arguments->{body} eq ".lotto") {
       @lottoarray = (1..35);
+      $lottonumbers = "";
       for ($i = 0; $i < 7; $i++) {
         $lottonumbers = $lottonumbers . ", " . splice(@lottoarray, int(rand($#lottoarray + 1)), 1); 
       }
@@ -182,7 +189,7 @@ sub said {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn>";
+      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad>";
       if (($isop == 1)||($ishp == 1)) {
        $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .qb <nick> | .qt <nick>";
        $opmessage = "true";
@@ -324,9 +331,6 @@ sub said {
         $message = $arguments->{who}.": Kommandot m\xE5ste inneh\xE5lla minst 2 argument separerade med ordet \"eller\"";
       }
     }
-
-
-
 
     if ($arguments->{body} eq ".fetchlog") {
       if (int($ytlock{'FETCHLOG!_COMMAND'}) < time) {
@@ -555,12 +559,15 @@ sub said {
         if ($arguments->{body} eq ".defcon") {
           if ($defcon eq "false") {
             $defcon = "true";
-            $message = "VARNING! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Ni andra - var f\xF6rsiktiga - Inga varningar/kicks kommer ges vid spam!";
+            $oldtopic = $self->topic($arguments->{channel});
+            $self->mode($arguments->{channel}." +t");
+            $self->topic($arguments->{channel}, "!! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
           }
           else
           {
             $defcon = "false";
-            $message = "INFORMATION! Undantagstillst\xE5nd har upph\xF6rt. Ni som \xE4r anslutna via TOR kan skriva som vanligt, och normala varningar/kicks kommer ges vid spam!";
+            $self->mode($arguments->{channel}." -t");
+            $self->topic($arguments->{channel}, $oldtopic);
           }
         }
       }
@@ -743,24 +750,28 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
       $self->say(channel => "msg", who => "ChanServ", body => "DEOP ".$arguments->{channel}." ".$arguments->{who});
       $self->say(channel => "msg", who => "ChanServ", body => "ACCESS ".$arguments->{channel}." DEL ".$arguments->{who});
       $self->join($arguments->{channel});
+      ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
+      $opban{$uidn} = 1;
       $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
       push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
       if ($#log > 40) {
         shift(@log);
       }
-      transmitmail("Deoppade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickar mig (anna) utan anledning.\n");
+      transmitmail("OP-bannade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickar mig (anna) utan anledning.\n");
     }
     else
     {
       if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)&&($arguments->{who} ne "ChanServ")&&($arguments->{kicked} ne "JuliaBot")) {
         $self->mode($arguments->{channel}." -oh ".$arguments->{who});
         $self->say(channel => "msg", who => "ChanServ", body => "ACCESS ".$arguments->{channel}." DEL ".$arguments->{who});
+        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
+        $opban{$uidn} = 1;
         $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
         push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
         if ($#log > 40) {
           shift(@log);
         }
-        transmitmail("Deoppade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som spamkickar ".$arguments->{kicked}." utan anledning.\n");
+        transmitmail("OP-bannade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som spamkickar ".$arguments->{kicked}." utan anledning.\n");
       }
       else
       { # Manual kick from this OP was legit and according with the rules. Record this manual kick in the bot so if the user begins to spam as an
@@ -788,7 +799,6 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
 sub mode_change {
   $self = shift;
   $arguments = shift;
-
   ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
   if (length($seclog) == 1) {
     $seclog = "0".$seclog;
@@ -801,7 +811,7 @@ sub mode_change {
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   @operlist = @{ $arguments->{mode_operands} };
-  unless (($arguments->{who} eq "ChanServ")||($arguments->{who} eq "Anna")||($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
+  unless (($arguments->{who} eq "ChanServ")||($arguments->{who} eq "Anna")) {
     if ($self->pocoirc->is_channel_operator($arguments->{channel},'anna') != 1) {
       $self->say(channel => "msg", who => "ChanServ", body => "OP ".$arguments->{channel});
       push(@log, $timestampprefix. "] *** N\xE5gon idiot som deoppade mig. Reoppar i ".$arguments->{channel});
@@ -946,6 +956,97 @@ sub userquit { # This function is called everytime someone joins
   return undef;
 }
 
+sub do_weather { # This function corresponds to the weather function
+  $human = $_[0];
+  $city = lc($_[1]);
+  $city =~ s/Ä/\xE4/sg;
+  $city =~ s/Å/\xE5/sg;
+  $city =~ s/Ö/\xF6/sg;
+  $city =~ s/\xC4/\xE4/sg;
+  $city =~ s/\xC5/\xE5/sg;
+  $city =~ s/\xD6/\xF6/sg;
+  $city =~ s/ä/\xE4/sg;
+  $city =~ s/å/\xE5/sg;
+  $city =~ s/ö/\xF6/sg;
+  $city =~ s/[^abcdefghijklmnopqrstuvwxyz\xE5\xE4\xF6]*//sg;
+  $rawmess = "";
+  if (int($ytlock{'DOWEATHER!_FETCH'}) < time) {
+    $ytlock{'DOWEATHER!_FETCH'} = time + 20;
+    if ($ytlock{'DOWEATHER!_CACHE'.$city} < time) {
+      $response = $ua->get('http://api.openweathermap.org/data/2.5/weather?q='.$city.'&appid='.$wkey.'&lang=se&units=metric');
+      $rbody = $response->decoded_content;
+      $descriptions = "";
+      $clouds = "N/A";
+      $temperature = "N/A";
+      $pressure = "N/A";
+      $windspeed = "N/A";
+      $cityname = "N/A";
+      $success = "false";
+      if ($rbody =~ m/\"weather\"\:\[([^\]]*)\]/) {
+        $success = "true";
+        $wdata = $1;
+        if ($wdata =~ m/\},\{/) {
+          @allweathers = split(/\},\{/, $wdata);
+          foreach $weather (@allweathers) {
+            if ($weather =~ m/"description":"([^"]*)"/) {
+              $wname = $1;
+              $descriptions = $descriptions . ", ".$wname;
+            }
+          }
+        }
+        else
+        {
+          if ($wdata =~ m/"description":"([^"]*)"/) {
+            $wname = $1;
+            $descriptions = $descriptions . $wname;
+          }
+        }
+      }
+      if ($rbody =~ m/\{"temp":([0123456789.-]*),"pressure":([0123456789.]*),"humidity":([0123456789.]*),/) {
+        $temperature = $1;
+        $pressure = $2;
+        $humidity = $3;
+      }
+      if ($rbody =~ m/\{"speed":([0123456789.-]*),/) {
+        $windspeed = $1;
+      }
+      if ($rbody =~ m/\"clouds\":\{\"all\":([0123456789.]*)\}/) {
+        $clouds = $1;
+      }
+      if ($rbody =~ m/,"name":"([^"]*)",/) {
+        $cityname = $1;
+      }
+      if ($success eq "true") {
+        $rawmess = $human.": Vädret i ".$cityname.": ".$descriptions.", ".$temperature." *C, ".$windspeed." m/s, ".$humidity." \% luftfuktighet, ".$clouds." \% molntäcke, ".$pressure." hPa";
+      }
+      else
+      {
+        if ($rbody =~ m/(city|geocode)/) {
+          $rawmess = $human.": Oj. Den staden verkar inte finnas.";
+        }
+        else
+        {
+          $rawmess = $human.": Oj. OpenWeatherMap verkar ligga nere.";
+        }
+      }
+      $rawmess =~ s/ä/\xE4/sg;
+      $rawmess =~ s/å/\xE5/sg;
+      $rawmess =~ s/ö/\xF6/sg;
+      $rawmess =~ s/Ä/\xC4/sg;
+      $rawmess =~ s/Å/\xC5/sg;
+      $rawmess =~ s/Ö/\xD6/sg;
+      $ytlock{'DOWEATHER!_CACHE'.$city} = time + 3600;
+      $ytlock{'DOWEATHER!_CACHECONTENT'.$city} = $rawmess;
+      $rawmess = $rawmess . " [live]";
+    }
+    else
+    {
+      $rawmess = $ytlock{'DOWEATHER!_CACHECONTENT'.$city};
+      $rawmess = $rawmess . " [cachad]";
+    }
+  }
+  return $rawmess;
+}
 
 sub do_opmsg { # This function corresponds to .opmsg
   $human = $_[0];
@@ -1227,7 +1328,6 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   $displayid = $partbb;
   return ($istor, $idnum, $displayid, $banmask);
 }
-
 
 
 sub numprettify { # This function visually prettifies a float. This by rounding off to 3 decimals if the integer is lower than 10, else it strips off decimals completely. And then adding spaces each 3rd digit.
