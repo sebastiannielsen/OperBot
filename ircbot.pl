@@ -13,6 +13,7 @@ package SebbeBot;
 %hasnotwritten = ();
 %iswatched = ();
 $defcon = "false";
+$usercmd = "true";
 
 %opban = ();
 $opban{'jjmj1u0baip'} = 1; # Extremely non-grown person. Hope a LARGE caterpillar comes to his house and "accidentially"
@@ -79,61 +80,216 @@ sub said {
     if ($#log > 40) {
       shift(@log);
     }
-    if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
-      $message = do_cryptocurrency($arguments->{body});
-    }
-    if ($arguments->{body} =~ m/flashback\.org\/(p|t|sp|u)(\d+)/i) {
-      $message = do_flashback($1.$2);
-    }
-    if (($arguments->{body} =~ m/swehack\.org\/viewtopic\.php\?/i)&&($arguments->{body} =~ m/(t=|p=)(\d+)/)) {
-      $message = do_swehack($1.$2);
-    }
-    if (($arguments->{body} =~ m/youtube\.com\/watch\?[^v]*v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
-      $message = do_youtube($1);
-    }
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
       $message = do_opmsg($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
     }
-    if ($arguments->{body} =~ m/^\.v(\xE4|ä)der (.+)/) {
-      $message = do_weather($arguments->{who}, $2);
-    }
-    if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
-      $email = $1;
-      $email =~ s/\\//sgi;
-      if (int($ytlock{$email}) < time) {
-        $ytlock{$email} = time + 5*60;
-        $hashoutput = "";
-        $rawresults = `/var/secure_files/bot/brcompilation_hashed/query.sh \"$email\"`;
-        $rawresults =~ s/\n/,/sgi;        
-        if (length($rawresults) > 16) {
-          $message = $arguments->{who}.": $email sha1: ".$rawresults;
+
+    $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+    $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+    if (($usercmd eq "true")||($isop == 1)||($ishp == 1)) {
+      if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
+        $message = do_cryptocurrency($arguments->{body});
+      }
+      if ($arguments->{body} =~ m/flashback\.org\/(p|t|sp|u)(\d+)/i) {
+        $message = do_flashback($1.$2);
+      }
+      if (($arguments->{body} =~ m/swehack\.org\/viewtopic\.php\?/i)&&($arguments->{body} =~ m/(t=|p=)(\d+)/)) {
+        $message = do_swehack($1.$2);
+      }
+      if (($arguments->{body} =~ m/youtube\.com\/watch\?[^v]*v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
+        $message = do_youtube($1);
+      }
+      if ($arguments->{body} =~ m/^\.v(\xE4|ä)der (.+)/) {
+        $message = do_weather($arguments->{who}, $2);
+      }
+      if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
+        $email = $1;
+        $email =~ s/\\//sgi;
+        if (int($ytlock{$email}) < time) {
+          $ytlock{$email} = time + 5*60;
+          $hashoutput = "";
+          $rawresults = `/var/secure_files/bot/brcompilation_hashed/query.sh \"$email\"`;
+          $rawresults =~ s/\n/,/sgi;        
+          if (length($rawresults) > 16) {
+            $message = $arguments->{who}.": $email sha1: ".$rawresults;
+          }
+          else
+          {
+            $message = $arguments->{who}.": Tyv\xE4rr, jag hittade inga hashar f\xF6r $email i min databas.";
+          }
+        }
+      }
+      if ($arguments->{body} eq ".morn") {
+        $message = "Godmorgon ".$arguments->{who}.", ".$morna[int(rand($#morna + 1))]." finns ".$mornb[int(rand($#mornb + 1))].".";
+        $message =~ s/ä/\xE4/sg;
+        $message =~ s/å/\xE5/sg;
+        $message =~ s/ö/\xF6/sg;
+        $message =~ s/Ä/\xC4/sg;
+        $message =~ s/Å/\xC5/sg;
+        $message =~ s/Ö/\xD6/sg;
+      }
+      if (($arguments->{body} eq ".r\xE4f")||($arguments->{body} eq ".räf")) {
+        $message = $rafarray[int(rand($#rafarray + 1))];
+        $message =~ s/ä/\xE4/sg;
+        $message =~ s/å/\xE5/sg;
+        $message =~ s/ö/\xF6/sg;
+        $message =~ s/Ä/\xC4/sg;
+        $message =~ s/Å/\xC5/sg;
+        $message =~ s/Ö/\xD6/sg;
+      }
+
+      if ($arguments->{body} =~ m/^\.(\xE4|ä)lska (.+)/) {
+        $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." <3";
+        $qemessage =~ s/ä/\xE4/sg;
+        $qemessage =~ s/å/\xE5/sg;
+        $qemessage =~ s/ö/\xF6/sg;
+        $qemessage =~ s/Ä/\xC4/sg;
+        $qemessage =~ s/Å/\xC5/sg;
+        $qemessage =~ s/Ö/\xD6/sg;
+        $self->emote(channel => $arguments->{channel}, body => $qemessage);
+        $qemessage = "";
+        $message = "";
+      }
+
+      if ($arguments->{body} eq ".lotto") {
+        @lottoarray = (1..35);
+        $lottonumbers = "";
+        for ($i = 0; $i < 7; $i++) {
+          $lottonumbers = $lottonumbers . ", " . splice(@lottoarray, int(rand($#lottoarray + 1)), 1); 
+        }
+        $lottonumbers =~ s/^,\s//;
+        $message = $arguments->{who}.": [ ".$lottonumbers." ]";
+      }
+
+      $opmessage = "false";
+      if ($arguments->{body} eq ".help") {
+        $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
+        $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
+        $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
+        $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad>";
+        if (($isop == 1)||($ishp == 1)) {
+          $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .usercmd | .qb <nick> | .qt <nick>";
+          $opmessage = "true";
+        }
+        if ($isowner == 1) {
+         $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick> | .watch <namn> | .logtofile <text> | .opban <nick> | .opunban <nick>";
+         $opmessage = "true";
+        }
+      }
+
+
+      if ($arguments->{body} eq ".per") {
+        $response = $ua->get('https://perper.se');
+        $rbody = $response->decoded_content;
+        $rbody =~ s/\n//sgi;
+        $rbody =~ s/\r//sgi;
+        $perperline = "fail";
+        if ($rbody =~ m/<p>([^<]*)<\/p>/s) {
+          $perperline = $1;
+          $perperline =~ s/&gt;/>/sgi;
+          $perperline =~ s/&lt;/</sgi;
+          $perperline =~ s/^[^<]*//;
+        }
+        if ($perperline eq "fail") { 
+          $message = $arguments->{who}.": Oj. perper.se verkar ligga nere.";
         }
         else
         {
-          $message = $arguments->{who}.": Tyv\xE4rr, jag hittade inga hashar f\xF6r $email i min databas.";
+          $message = $perperline;
+        }
+      }
+      if ($arguments->{body} eq ".butkus") {
+        $response = $ua->get('https://butkus.xyz/api/v1');
+        $rbody = $response->decoded_content;
+        $rbody =~ s/\n//sgi;
+        $rbody =~ s/\r//sgi;
+        $butkusline = "fail";
+        if ($rbody =~ m/<pre>([^<]*)<\/pre>/s) {
+          $butkusline = $1;
+          $butkusline =~ s/&gt;/>/sgi;
+          $butkusline =~ s/&lt;/</sgi;
+          $butkusline =~ s/^[^<]*//;
+        }
+        if ($butkusline eq "fail") {
+          $message = $arguments->{who}.": Oj. Butkus API verkar ligga nere.";
+        }
+        else
+        {
+          $message = $butkusline;
+        }
+      }
+      if ($arguments->{body} =~ m/^\.best(\xE4|ä)m (.+)/) {
+        $datatodecide = $2;
+        if ((length($datatodecide) > 8)&&($datatodecide =~ m/\seller\s/si)) {
+          $checkerstring = $datatodecide;
+          $checkerstring =~ s/\xE4/a/sg;
+          $checkerstring =~ s/\xE5/a/sg;
+          $checkerstring =~ s/\xF6/o/sg;
+          $checkerstring =~ s/\xC4/a/sg;
+          $checkerstring =~ s/\xC5/a/sg;
+          $checkerstring =~ s/\xD6/o/sg;
+          $checkerstring =~ s/å/a/sg;
+          $checkerstring =~ s/ä/a/sg;
+          $checkerstring =~ s/ö/o/sg;
+          $checkerstring =~ s/Å/a/sg;
+          $checkerstring =~ s/Ä/a/sg;
+          $checkerstring =~ s/Ö/o/sg;
+          $checkerstring =~ s/0/o/sg;
+          $checkerstring =~ s/1/l/sg;
+          $checkerstring =~ s/2/z/sg;
+          $checkerstring =~ s/3/e/sg;
+          $checkerstring =~ s/4/a/sg;
+          $checkerstring =~ s/5/s/sg;
+          $checkerstring =~ s/6/b/sg;
+          $checkerstring =~ s/7/t/sg;
+          $checkerstring =~ s/8/b/sg;
+          $checkerstring =~ s/9/q/sg;
+          $checkerstring =~ s/\@/a/sg;
+          $checkerstring =~ s/\$/s/sg;
+          $checkerstring = lc($checkerstring);
+          $checkerstring =~ s/[^abcdefghijklmnopqrstuvwxyz]*//sgi;
+          if ($checkerstring =~ m/(spark|bann|kick|uteslut|utestang|exkommunicera|exkommunlcera|utstot|fordom|fordriv|fordrlv|klck|zlina|klina|glina|zline|kline|gline|zllna|kllna|gllna|zllne|kllne|gllne)/sgi) {
+            $message = $arguments->{who}.": Nope, st\xE4ll vettigare fr\xE5gor \xE4n att slumpa ut att n\xE5gon ska bannas eller kickas.";
+          }
+          else
+          {
+            if (int($ytlock{'BTM!_COMMAND'.$checkerstring}) < time) {
+              $ytlock{'BTM!_COMMAND'.$checkerstring} = time + 5*60;
+              $datatodecide =~ s/[^a-zA-Z0-9åäöÅÄÖ\xE4\xE5\xF6\xC4\xC5\xD6\;\,\:\.\-\_\!\"\@\#\£\$\%\&\/\(\[\)\]\=\}\?\\\+\*\'\<\>\| ]*//sg;
+              @allrandom = split(/\seller\s/si, $datatodecide);
+              $randvalue = $allrandom[int(rand($#allrandom + 1))];
+              $message = $arguments->{who}.": ".$randvalue;
+            }
+          }
+        }
+        else
+        {
+          $message = $arguments->{who}.": Kommandot m\xE5ste inneh\xE5lla minst 2 argument separerade med ordet \"eller\"";
+        }
+      }
+
+      if ($arguments->{body} eq ".fetchlog") {
+        if (int($ytlock{'FETCHLOG!_COMMAND'}) < time) {
+          if (int($ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}}) < time) {
+            $ytlock{'FETCHLOG!_COMMAND'} = time + 20;
+            $ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}} = time + 5*60;
+            $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
+            $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
+            $i = 0;
+            $max = 0;
+            if ($#log > 18) {
+              $max = $#log - 19;
+            }
+            foreach $msgline (@log) {
+              $i++;
+              if ($i > $max) {
+                $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
+              }
+            }
+          }
         }
       }
     }
-
-    if ($arguments->{body} eq ".morn") {
-      $message = "Godmorgon ".$arguments->{who}.", ".$morna[int(rand($#morna + 1))]." finns ".$mornb[int(rand($#mornb + 1))].".";
-      $message =~ s/ä/\xE4/sg;
-      $message =~ s/å/\xE5/sg;
-      $message =~ s/ö/\xF6/sg;
-      $message =~ s/Ä/\xC4/sg;
-      $message =~ s/Å/\xC5/sg;
-      $message =~ s/Ö/\xD6/sg;
-    }
-    if (($arguments->{body} eq ".r\xE4f")||($arguments->{body} eq ".räf")) {
-      $message = $rafarray[int(rand($#rafarray + 1))];
-      $message =~ s/ä/\xE4/sg;
-      $message =~ s/å/\xE5/sg;
-      $message =~ s/ö/\xF6/sg;
-      $message =~ s/Ä/\xC4/sg;
-      $message =~ s/Å/\xC5/sg;
-      $message =~ s/Ö/\xD6/sg;
-    }
-
 
     if (($arguments->{body} =~ m/^\.logtofile (.+)/)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) == 1)) {
       open(LOGFILE, ">>logtofile.txt");
@@ -161,42 +317,20 @@ sub said {
       }
     }
 
-    if ($arguments->{body} =~ m/^\.(\xE4|ä)lska (.+)/) {
-      $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." <3";
-      $qemessage =~ s/ä/\xE4/sg;
-      $qemessage =~ s/å/\xE5/sg;
-      $qemessage =~ s/ö/\xF6/sg;
-      $qemessage =~ s/Ä/\xC4/sg;
-      $qemessage =~ s/Å/\xC5/sg;
-      $qemessage =~ s/Ö/\xD6/sg;
-      $self->emote(channel => $arguments->{channel}, body => $qemessage);
-      $qemessage = "";
-      $message = "";
-    }
 
-    if ($arguments->{body} eq ".lotto") {
-      @lottoarray = (1..35);
-      $lottonumbers = "";
-      for ($i = 0; $i < 7; $i++) {
-        $lottonumbers = $lottonumbers . ", " . splice(@lottoarray, int(rand($#lottoarray + 1)), 1); 
-      }
-      $lottonumbers =~ s/^,\s//;
-      $message = $arguments->{who}.": [ ".$lottonumbers." ]";
-    }
-
-    $opmessage = "false";
-    if ($arguments->{body} eq ".help") {
+    if ($arguments->{body} eq ".usercmd") {
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
-      $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-      $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad>";
       if (($isop == 1)||($ishp == 1)) {
-       $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .qb <nick> | .qt <nick>";
-       $opmessage = "true";
-      }
-      if ($isowner == 1) {
-       $message = $message . "\n \xC4GARE: .shutdown | .resetbot | .setnotwritten <nick> | .clrnotwritten <nick> | .watch <namn> | .logtofile <text> | .opban <nick> | .opunban <nick>";
-       $opmessage = "true";
+        if ($usercmd eq "true") {
+          $usercmd = "false";
+          $message = $arguments->{who}.": Alla anv\xE4ndarkommandon \xE4r nu sp\xE4rrade.";       
+        }
+        else
+        {
+          $usercmd = "true";
+          $message = $arguments->{who}.": Aktiverade alla anv\xE4ndarkommandon.";       
+        }
       }
     }
 
@@ -223,133 +357,23 @@ sub said {
             $ufh = lc($self->pocoirc->nick_long_form($usernick));
             ($un, $uh) = split(/\@/, $ufh);
             ($bn, $bu) = split(/\!/, $un);
-            if ((substr($bn,0,length($botban)) eq $botban)&&(substr($bu,0,length($botban)) eq $botban)) {
-              if ($dotor eq "true") {
-                if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
+            unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
+              if ((substr($bn,0,length($botban)) eq $botban)&&(substr($bu,0,length($botban)) eq $botban)) {
+                if ($dotor eq "true") {
+                  if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
+                    $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
+                    $botfound++;
+                  }
+                }
+                else
+                {
                   $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
                   $botfound++;
                 }
               }
-              else
-              {
-                $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
-                $botfound++;
-              }
             }
           }
           $message = $arguments->{who}.": Hittade och bannade ".$botfound." spambottar i kanalen.";
-        }
-      }
-    }
-
-    if ($arguments->{body} eq ".per") {
-      $response = $ua->get('https://perper.se');
-      $rbody = $response->decoded_content;
-      $rbody =~ s/\n//sgi;
-      $rbody =~ s/\r//sgi;
-      $perperline = "fail";
-      if ($rbody =~ m/<p>([^<]*)<\/p>/s) {
-        $perperline = $1;
-        $perperline =~ s/&gt;/>/sgi;
-        $perperline =~ s/&lt;/</sgi;
-        $perperline =~ s/^[^<]*//;
-      }
-      if ($perperline eq "fail") { 
-        $message = $arguments->{who}.": Oj. perper.se verkar ligga nere.";
-      }
-      else
-      {
-        $message = $perperline;
-      }
-    }
-    if ($arguments->{body} eq ".butkus") {
-      $response = $ua->get('https://butkus.xyz/api/v1');
-      $rbody = $response->decoded_content;
-      $rbody =~ s/\n//sgi;
-      $rbody =~ s/\r//sgi;
-      $butkusline = "fail";
-      if ($rbody =~ m/<pre>([^<]*)<\/pre>/s) {
-        $butkusline = $1;
-        $butkusline =~ s/&gt;/>/sgi;
-        $butkusline =~ s/&lt;/</sgi;
-        $butkusline =~ s/^[^<]*//;
-      }
-      if ($butkusline eq "fail") {
-        $message = $arguments->{who}.": Oj. Butkus API verkar ligga nere.";
-      }
-      else
-      {
-        $message = $butkusline;
-      }
-    }
-    if ($arguments->{body} =~ m/^\.best(\xE4|ä)m (.+)/) {
-      $datatodecide = $2;
-      if ((length($datatodecide) > 8)&&($datatodecide =~ m/\seller\s/si)) {
-        $checkerstring = $datatodecide;
-        $checkerstring =~ s/\xE4/a/sg;
-        $checkerstring =~ s/\xE5/a/sg;
-        $checkerstring =~ s/\xF6/o/sg;
-        $checkerstring =~ s/\xC4/a/sg;
-        $checkerstring =~ s/\xC5/a/sg;
-        $checkerstring =~ s/\xD6/o/sg;
-        $checkerstring =~ s/å/a/sg;
-        $checkerstring =~ s/ä/a/sg;
-        $checkerstring =~ s/ö/o/sg;
-        $checkerstring =~ s/Å/a/sg;
-        $checkerstring =~ s/Ä/a/sg;
-        $checkerstring =~ s/Ö/o/sg;
-        $checkerstring =~ s/0/o/sg;
-        $checkerstring =~ s/1/l/sg;
-        $checkerstring =~ s/2/z/sg;
-        $checkerstring =~ s/3/e/sg;
-        $checkerstring =~ s/4/a/sg;
-        $checkerstring =~ s/5/s/sg;
-        $checkerstring =~ s/6/b/sg;
-        $checkerstring =~ s/7/t/sg;
-        $checkerstring =~ s/8/b/sg;
-        $checkerstring =~ s/9/q/sg;
-        $checkerstring =~ s/\@/a/sg;
-        $checkerstring =~ s/\$/s/sg;
-        $checkerstring = lc($checkerstring);
-        $checkerstring =~ s/[^abcdefghijklmnopqrstuvwxyz]*//sgi;
-        if ($checkerstring =~ m/(spark|bann|kick|uteslut|utestang|exkommunicera|exkommunlcera|utstot|fordom|fordriv|fordrlv|klck|zlina|klina|glina|zline|kline|gline|zllna|kllna|gllna|zllne|kllne|gllne)/sgi) {
-          $message = $arguments->{who}.": Nope, st\xE4ll vettigare fr\xE5gor \xE4n att slumpa ut att n\xE5gon ska bannas eller kickas.";
-        }
-        else
-        {
-          if (int($ytlock{'BTM!_COMMAND'.$checkerstring}) < time) {
-            $ytlock{'BTM!_COMMAND'.$checkerstring} = time + 5*60;
-            $datatodecide =~ s/[^a-zA-Z0-9åäöÅÄÖ\xE4\xE5\xF6\xC4\xC5\xD6\;\,\:\.\-\_\!\"\@\#\£\$\%\&\/\(\[\)\]\=\}\?\\\+\*\'\<\>\| ]*//sg;
-            @allrandom = split(/\seller\s/si, $datatodecide);
-            $randvalue = $allrandom[int(rand($#allrandom + 1))];
-            $message = $arguments->{who}.": ".$randvalue;
-          }
-        }
-      }
-      else
-      {
-        $message = $arguments->{who}.": Kommandot m\xE5ste inneh\xE5lla minst 2 argument separerade med ordet \"eller\"";
-      }
-    }
-
-    if ($arguments->{body} eq ".fetchlog") {
-      if (int($ytlock{'FETCHLOG!_COMMAND'}) < time) {
-        if (int($ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}}) < time) {
-          $ytlock{'FETCHLOG!_COMMAND'} = time + 20;
-          $ytlock{'FETCHLOG!_COMMAND'.$arguments->{who}} = time + 5*60;
-          $message = $arguments->{who}.": Du har PM fr\xE5n mig med loggen!";
-          $self->say(channel => "msg", who => $arguments->{who}, body => "H\xE4r kommer de 20 senaste meddelandena:");
-          $i = 0;
-          $max = 0;
-          if ($#log > 18) {
-            $max = $#log - 19;
-          }
-          foreach $msgline (@log) {
-            $i++;
-            if ($i > $max) {
-              $self->say(channel => "msg", who => $arguments->{who}, body => $msgline);
-            }
-          }
         }
       }
     }
@@ -436,7 +460,6 @@ sub said {
           }
         }
       }
-
       if (($isop == 1)||($ishp == 1)) { # ONLY OPS/HALFOPS CAN EXECUTE THESE (INCLUDING OWNER)
         if ($arguments->{body} =~ m/^\.setwarn (.+)/) {
           $user = $1;
@@ -584,6 +607,7 @@ sub said {
         $checkerstring =~ s/\.(btc|bch|ltc|xmr|eth|xrp)/\.cc/sgi;
         $checkerstring =~ s/\.butkus/\.per/sgi;
         $checkerstring =~ s/\.raf/\.per/sgi;
+        $checkerstring =~ s/\.vader/\.per/sgi;
         $checkerstring =~ s/\.alska/\.bestam/sgi;
         $checkerstring =~ s/\.lotto/\.per/sgi;      
         $checkerstring =~ s/0/o/sg;
@@ -972,7 +996,7 @@ sub do_weather { # This function corresponds to the weather function
   $rawmess = "";
   if (int($ytlock{'DOWEATHER!_FETCH'}) < time) {
     $ytlock{'DOWEATHER!_FETCH'} = time + 20;
-    if ($ytlock{'DOWEATHER!_CACHE'.$city} < time) {
+    if (int($ytlock{'DOWEATHER!_CACHE'.$city}) < time) {
       $response = $ua->get('http://api.openweathermap.org/data/2.5/weather?q='.$city.'&appid='.$wkey.'&lang=se&units=metric');
       $rbody = $response->decoded_content;
       $descriptions = "";
@@ -990,7 +1014,7 @@ sub do_weather { # This function corresponds to the weather function
           foreach $weather (@allweathers) {
             if ($weather =~ m/"description":"([^"]*)"/) {
               $wname = $1;
-              $descriptions = $descriptions . ", ".$wname;
+              $descriptions = $descriptions . $wname . ", ";
             }
           }
         }
@@ -998,7 +1022,7 @@ sub do_weather { # This function corresponds to the weather function
         {
           if ($wdata =~ m/"description":"([^"]*)"/) {
             $wname = $1;
-            $descriptions = $descriptions . $wname;
+            $descriptions = $descriptions . $wname . ", ";
           }
         }
       }
@@ -1017,7 +1041,7 @@ sub do_weather { # This function corresponds to the weather function
         $cityname = $1;
       }
       if ($success eq "true") {
-        $rawmess = $human.": Vädret i ".$cityname.": ".$descriptions.", ".$temperature." *C, ".$windspeed." m/s, ".$humidity." \% luftfuktighet, ".$clouds." \% molntäcke, ".$pressure." hPa";
+        $rawmess = $human.": Vädret i ".$cityname.": ".$descriptions.$temperature." *C, ".$windspeed." m/s, ".$humidity." \% luftfuktighet, ".$clouds." \% molntäcke, ".$pressure." hPa";
       }
       else
       {
@@ -1054,7 +1078,7 @@ sub do_opmsg { # This function corresponds to .opmsg
   $isop = $_[2];
   $isown = $_[3];
   if ($isop == 1) {
-    if (($ytlock{'OPMSG!_FUNCTION'} < time)||($isown == 1)) {
+    if ((int($ytlock{'OPMSG!_FUNCTION'}) < time)||($isown == 1)) {
       $ytlock{'OPMSG!_FUNCTION'} = time + 30*60;
       $inmessage =~ s/ä/\xE4/sg;
       $inmessage =~ s/å/\xE5/sg;
@@ -1072,7 +1096,6 @@ sub do_opmsg { # This function corresponds to .opmsg
   }
   return $message;
 }
-
 
 sub do_youtube { # This function is called anytime a Youtube URL is encountered.
   $ytid = $_[0];
@@ -1216,7 +1239,7 @@ sub do_cryptocurrency { # This function is called everytime somebody requests in
 $inmess = $_[0];
   if (int($ytlock{'CRYPTOCURRENCY!_FETCH'}) < time) {
     $ytlock{'CRYPTOCURRENCY!_FETCH'} = time + 5*60;
-    if ($ytlock{'CRYPTOCURRENCY!_CACHE'} < time) {
+    if (int($ytlock{'CRYPTOCURRENCY!_CACHE'}) < time) {
       $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=40');
       $rbody = $response->decoded_content;
       $rbody =~ s/\n//sgi;
@@ -1252,7 +1275,7 @@ $inmess = $_[0];
     }
     else
     {
-      $timeleft = $ytlock{'CRYPTOCURRENCY!_CACHE'} - time;
+      $timeleft = int($ytlock{'CRYPTOCURRENCY!_CACHE'}) - time;
       $timeleft + 120;
       $minutesleft = int($timeleft / 60);
       $cached = "[cachad ${minutesleft}m]";
