@@ -12,6 +12,8 @@ package SebbeBot;
 %msg = ();
 %hasnotwritten = ();
 %iswatched = ();
+%lastseen = ();
+
 $defcon = "false";
 $usercmd = "true";
 $logchanged = "true";
@@ -47,7 +49,15 @@ sub said {
   $arguments = shift;    # Contains the message that the bot heard.
   $ua = LWP::UserAgent->new;
   $message = "";
-  ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+  ( $seclog, $minlog, $hourlog, $day, $month, $year ) = (localtime)[0,1,2,3,4,5];
+  $year = $year + 1900;
+  $month++;
+  if (length($month) < 2) {
+    $month = "0".$month;
+  }
+  if (length($day) < 2) {
+    $day = "0".$day;
+  }
   if (length($seclog) == 1) {
     $seclog = "0".$seclog;
   }
@@ -83,6 +93,11 @@ sub said {
     if ($#log > 40) {
       shift(@log);
     }
+
+    unless ($arguments->{body} =~ m/^\./) {
+      $lastseen{$arguments->{who}} = "<".$nickprefix.$arguments->{who}."[".$year."-".$month."-".$day."_".$hourlog.":".$minlog.":".$seclog."]> ".$arguments->{body}; 
+    }
+
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
       $message = do_opmsg($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
     }
@@ -141,6 +156,23 @@ sub said {
         $message =~ s/Ö/\xD6/sg;
       }
 
+      if ($arguments->{body} =~ m/^\.lastseen (.+)/) {
+        $username = $1;
+        $username =~ s/\s//sgi;
+        $username =~ s/\@//sgi;
+        $username =~ s/\!//sgi;
+        if (int($ytlock{'LASTSEEN!_COMMAND'.$username}) < time) {
+          $ytlock{'LASTSEEN!_COMMAND'.$username} = time + 5*60;
+          if (length($lastseen{$username}) > 24) {
+            $message = $lastseen{$username};
+          }
+          else
+          {
+            $message = "Nej, jag har inte sett ".$username." skriva sedan jag startade om senast."; 
+          }
+        }
+      }
+
       if ($arguments->{body} =~ m/^\.(\xE4|ä)lska (.+)/) {
         $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." <3";
         $qemessage =~ s/ä/\xE4/sg;
@@ -169,9 +201,9 @@ sub said {
         $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
         $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
         $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-        $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad>";
+        $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad> | .lastseen <nick>";
         if (($isop == 1)||($ishp == 1)) {
-          $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .usercmd | .qb <nick> | .qt <nick>";
+          $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .usercmd | .qb <realname> | .qt <realname>";
           $opmessage = "true";
         }
         if ($isowner == 1) {
@@ -347,12 +379,12 @@ sub said {
         if (length($botban) > 0) {
           @allusers = $self->channel_list($arguments->{channel});
           if ($cmd eq "qt") {
-            $self->mode($arguments->{channel}." +b ".$botban."*!".$botban."*\@*.4uh.b8obtf.IP");
+            $self->mode($arguments->{channel}." +b *!".$botban."*\@*.4uh.b8obtf.IP");
             $dotor = "true";
           }
           else
           {
-            $self->mode($arguments->{channel}." +b ".$botban."*!".$botban."*\@*");
+            $self->mode($arguments->{channel}." +b *!".$botban."*\@*");
             $dotor = "false";
           }
           $botfound = 0;
@@ -361,7 +393,7 @@ sub said {
             ($un, $uh) = split(/\@/, $ufh);
             ($bn, $bu) = split(/\!/, $un);
             unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
-              if ((substr($bn,0,length($botban)) eq $botban)&&(substr($bu,0,length($botban)) eq $botban)) {
+              if (substr($bu,0,length($botban)) eq $botban) {
                 if ($dotor eq "true") {
                   if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
                     $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
@@ -1087,12 +1119,12 @@ sub tick {
         if (length($arg1) > 0) {
           @allusers = $self->channel_list("#sebastian");
           if ($command eq "QT") {
-            $self->mode("#sebastian +b ".$arg1."*!".$arg1."*\@*.4uh.b8obtf.IP");
+            $self->mode("#sebastian +b *!".$arg1."*\@*.4uh.b8obtf.IP");
             $dotor = "true";
           }
           else
           {
-            $self->mode("#sebastian +b ".$arg1."*!".$arg1."*\@*");
+            $self->mode("#sebastian +b *!".$arg1."*\@*");
             $dotor = "false";
           }
           foreach $usernick (@allusers) {
@@ -1100,7 +1132,7 @@ sub tick {
             ($un, $uh) = split(/\@/, $ufh);
             ($bn, $bu) = split(/\!/, $un);
             unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
-              if ((substr($bn,0,length($arg1)) eq $arg1)&&(substr($bu,0,length($arg1)) eq $arg1)) {
+              if (substr($bu,0,length($arg1)) eq $arg1) {
                 if ($dotor eq "true") {
                   if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
                     $self->kick("#sebastian", $usernick, "Inga spambottar h\xE4r, tack!");
@@ -1147,11 +1179,14 @@ sub tick {
       }
       $fullnick = $nickprefix.$nick;
       $channeldata = $channeldata . $fullnick . "!!";
+      $channeldata =~ s/\|//sgi;
     }
     open(LOGCHANNEL, ">/var/secure_files/bot/logchannel.txt");
     flock(LOGCHANNEL,2);
     print LOGCHANNEL $channeldata . "|";
     foreach $entry (@log) {
+      $entry =~ s/\|//sgi;
+      $entry =~ s/\n//sgi;
       print LOGCHANNEL $entry."|";
     }
     close(LOGCHANNEL);
