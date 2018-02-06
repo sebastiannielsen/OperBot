@@ -14,12 +14,14 @@ package SebbeBot;
 %iswatched = ();
 $defcon = "false";
 $usercmd = "true";
+$logchanged = "true";
 
 %opban = ();
-$opban{'jjmj1u0baip'} = 1; # Extremely non-grown person. Hope a LARGE caterpillar comes to his house and "accidentially"
-                           # digs off his fiber cable so he is PERMANENTLY without internet.
-$opban{'bsocietyse'} = 1;  # Same person as above
-$opban{'uhfos8d4eip'} = 1; # A person who likes to play with his OP functions when he is bored.
+$opban{'areendopterygotes'} = 1; # Extremely non-grown person. Hope a LARGE caterpillar comes to his house and "accidentially"
+                           # digs off his fiber cable so he is PERMANENTLY without internet. (a4r/drama)
+$opban{'jjmj1u0baip'} = 1; # Same person as above (a4r/drama)
+$opban{'bsocietyse'} = 1;  # Same person as above (a4r/drama)
+$opban{'uhfos8d4eip'} = 1; # A person who likes to play with his OP functions when he is bored. (per)
 
 @rafarray = ("jag vill känna långlivad organisk glädje och lyfta denna förbannelsen", "du måste stirra in i denna kuben och FÖRSTÅ","jag visar dig de otänkbra!!","jag är ett hungerigt barn","mitt liv är i förödelse","kompster", "skåda den starkaste mjuk öra någonsin","ok kompis det är bara du och jag", "han kommer bli en stark pojke","glad jlu", "välkommen till sceniskt räfland", "vi har tassar,vi har äpple", "vad mer kan man begära", "kryddig het räf", "förståeligt","den sista biten", "jag ser, i den vacker dröm","jag vaknar, och har glömt","någonting fattas", "inge tålamod","när jag var hälften som du, var jag så här liten","men dubbelt utav mig är inte som nu","hej, jag är spöke som är efter din själ", "kan vi bli vän", "det är för riskabelt", "okej nu är det bara du och jag", "jag representerar denna världens hopp", "förtälj om din vishet", "jag är faktiskt bara liten", "nu går vi och spökar en kamrat", "tystnad mina barn", "jag bringar er en fest", "vilken förtjusande melodi", "jag äger tre flöjter", "tuut", "jag flyter förbi med goda nyheter", "wow vad är det","jag har upptäckt meningen", "meningen till vad", "mysterium", "absolut icke", "???", "!!!", "löf i mund dialekt", "ånga i ansikte dialekt", "varför gör du detta mot mig", "har du övervägt läg1man1", "vad är läg1man1", "gratulationer", "jag spökar ditt förflutet", "jag spökar ditt nuvarande", "jag !! spökar nästan", "jag vill inte spräcka din bubbla men", "boop", "tjena vänner kolla in denna ljuvliga bläckfisgen", "håll denna vännen", "fantastiskt", "nu kan vi observera gatorn medans den förföljer sitt byte", "den kommer mumsa!!","mums", "låt oss diskutera alla våra kunskaper och planer", "vänta tyst!!", "å nej", "wow det finns så många vacker klänning", "vilken ska jag välja", "ursäkta, det inte okej, beep och boop passar inte", "är du ok", "fixa", "T A C K F Ö R A T T D U L O G G A D E I N", "det är det enda sättet att hitta marshmeln", "min skapare vi har funnit", "det är fantastiskt", "synnerligen, helt säkert", "ojsan vad är det där","nyoom", "ooooooooooooooooooooooooooooooooooooo", "det jag, jag är molnet, titta: fhu~", "fhu~", "låt mig berätta, vän, jag vet vad det","tassfluff", "vänta det är inte längre ok", "bort från mig hunde, jag är ASFALT", "är du någonlunda kylig vill du ha en halsduk", "denna är till dig", "jag är en riktig hiss!!", "ok farväl vän", "nyoom", "låt oss gifta oss!!","ok!!","vi är gifta nu!!","ja!!", "låt oss gå till djurparken!", "hurra!");
 @lovea = ("pussar","slickar","gosar","smeker","lindar armarna om","kramar","klappar","myser","sniffar","nafsar","gnuggar","eskimåkysser");
@@ -77,6 +79,7 @@ sub said {
     }
 
     push(@log, $timestampprefix . "] <".$nickprefix.$arguments->{who}."> ".$arguments->{body});
+    $logchanged = "true";
     if ($#log > 40) {
       shift(@log);
     }
@@ -388,15 +391,6 @@ sub said {
       $message = $arguments->{who}.": Rubbet rensat inkl cache!";
     }
 
-    ( $day, $month, $year ) = (localtime)[3,4,5];
-    $currentdate = $day."-".($month+1)."-".($year+1900);
-    unless ($currentdate eq $lastclear) {
-      $lastclear = $currentdate;
-      %msg = ();
-      %hasnotwritten = ();
-      %ytlock = ();
-    }
-
       $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
       $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
       $isad = $self->pocoirc->is_channel_admin($arguments->{channel},$arguments->{who});
@@ -440,6 +434,7 @@ sub said {
           if ($self->pocoirc->is_channel_member($arguments->{channel},$user) == 1) {
             ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
             $opban{$uidn} = 1;
+            $self->mode($arguments->{channel}." -voh ".$user);
             $message = $arguments->{who}.": OP-bannade ".$user.". (".$uidn.")";
           }
           else
@@ -519,8 +514,14 @@ sub said {
           $user = $1;
           if ($self->pocoirc->is_channel_member($arguments->{channel},$user) == 1) {
             ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
-            $msg{$uidn} = "0:0:0:0:0";
-            $message = $arguments->{who}.": Rensade status p\xE5 $user.";
+            if ($opban{$uidn} == 1) {
+              $message = $arguments->{who}.": Kan inte rensa status p\xE5 $user eftersom han \xE4r OP-bammad.";
+            }
+            else
+            { 
+              $msg{$uidn} = "0:0:0:0:0";
+              $message = $arguments->{who}.": Rensade status p\xE5 $user.";
+            }
           }
           else
           {
@@ -576,8 +577,12 @@ sub said {
           }
         }
         if ($arguments->{body} eq ".clrall") {
-          %msg = ();
-          $message = $arguments->{who}.": Rensade alla anv\xE4ndare.";
+          foreach $k (keys %msg) {
+            unless ($opban{$k} == 1) {
+              $msg{$k} = "";
+            }
+          }
+          $message = $arguments->{who}.": Rensade alla anv\xE4ndare utom de som \xE4r OP-bannade.";
         }
         if ($arguments->{body} eq ".defcon") {
           if ($defcon eq "false") {
@@ -702,6 +707,7 @@ sub said {
       $message = substr($message,0,250);
     }
     push(@log, $timestampprefix."] <\@Anna> $message");
+    $logchanged = "true";
     if ($#log > 40) {
       shift(@log);
     }
@@ -728,6 +734,7 @@ sub nick_change {
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   push(@log, $timestampprefix. "] *** ".$oldnick." bytte namn till ".$newnick);
+  $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
@@ -765,11 +772,12 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   push(@log, $timestampprefix. "] *** ".$arguments->{who}." kickade ".$arguments->{kicked}." fr\xE5n ".$arguments->{channel});
+  $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
-  unless ($arguments->{who} eq "anna") {
-    if (($arguments->{kicked} eq "anna")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($arguments->{who} ne "ChanServ")) {
+  unless ($arguments->{who} eq "Anna") {
+    if (($arguments->{kicked} eq "Anna")&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($arguments->{who} ne "ChanServ")) {
       $self->say(channel => "msg", who => "ChanServ", body => "UNBAN ".$arguments->{channel});
       $self->say(channel => "msg", who => "ChanServ", body => "DEOP ".$arguments->{channel}." ".$arguments->{who});
       $self->say(channel => "msg", who => "ChanServ", body => "ACCESS ".$arguments->{channel}." DEL ".$arguments->{who});
@@ -777,21 +785,23 @@ sub kicked { # This function is called everytime ANYONE is kicked in the channel
       ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
       $opban{$uidn} = 1;
       $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
-      push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+      push(@log, $timestampprefix."] <\@Anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+      $logchanged = "true";
       if ($#log > 40) {
         shift(@log);
       }
-      transmitmail("OP-bannade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickar mig (anna) utan anledning.\n");
+      transmitmail("OP-bannade maktgalen OP ".$arguments->{who}." fr\xE5n ".$arguments->{channel}." som kickar mig (Anna) utan anledning.\n");
     }
     else
     {
-      if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($self->pocoirc->is_channel_operator($arguments->{channel},'anna') == 1)&&($arguments->{who} ne "ChanServ")&&($arguments->{kicked} ne "JuliaBot")) {
+      if (($hasnotwritten{$arguments->{kicked}} == 1)&&($self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who}) != 1)&&($arguments->{who} ne "ChanServ")) {
         $self->mode($arguments->{channel}." -oh ".$arguments->{who});
         $self->say(channel => "msg", who => "ChanServ", body => "ACCESS ".$arguments->{channel}." DEL ".$arguments->{who});
         ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arguments->{who}));
         $opban{$uidn} = 1;
         $self->say(channel => $arguments->{channel}, body => $arguments->{who}.": Missbruka inte dina OP-funktioner!");
-        push(@log, $timestampprefix."] <\@anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+        push(@log, $timestampprefix."] <\@Anna> ".$arguments->{who}.": Missbruka inte dina OP-funktioner!");
+        $logchanged = "true";
         if ($#log > 40) {
           shift(@log);
         }
@@ -835,10 +845,12 @@ sub mode_change {
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   @operlist = @{ $arguments->{mode_operands} };
+  $logchanged = "true";
   unless (($arguments->{who} eq "ChanServ")||($arguments->{who} eq "Anna")) {
-    if ($self->pocoirc->is_channel_operator($arguments->{channel},'anna') != 1) {
+    if ($self->pocoirc->is_channel_operator($arguments->{channel},'Anna') != 1) {
       $self->say(channel => "msg", who => "ChanServ", body => "OP ".$arguments->{channel});
       push(@log, $timestampprefix. "] *** N\xE5gon idiot som deoppade mig. Reoppar i ".$arguments->{channel});
+      $logchanged = "true";
       if ($#log > 40) {
         shift(@log);
       }
@@ -852,6 +864,7 @@ sub mode_change {
           if ($opban{$oppedid} == 1) {
             $self->mode($arguments->{channel}." -o ".$oppeduser);
             push(@log, $timestampprefix. "] *** ".$arguments->{who}." f\xF6rs\xF6kte oppa den OP-bannade ".$oppeduser);
+            $logchanged = "true";
             if ($#log > 40) {
               shift(@log);
             }
@@ -861,6 +874,7 @@ sub mode_change {
           if ($opban{$oppedid} == 1) {
             $self->mode($arguments->{channel}." -h ".$oppeduser);
             push(@log, $timestampprefix. "] *** ".$arguments->{who}." f\xF6rs\xF6kte halfoppa den OP-bannade ".$oppeduser);
+            $logchanged = "true";
             if ($#log > 40) {
               shift(@log);
             }
@@ -870,6 +884,7 @@ sub mode_change {
           if ($opban{$oppedid} == 1) {
             $self->mode($arguments->{channel}." -v ".$oppeduser);
             push(@log, $timestampprefix. "] *** ".$arguments->{who}." f\xF6rs\xF6kte voica den OP-bannade ".$oppeduser);
+            $logchanged = "true";
             if ($#log > 40) {
               shift(@log);
             }
@@ -895,6 +910,7 @@ sub chanjoin { # This function is called everytime someone joins
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   push(@log, $timestampprefix. "] *** ".$arguments->{who}." joinade ".$arguments->{channel}.".");
+  $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
@@ -932,6 +948,230 @@ sub chanjoin { # This function is called everytime someone joins
   return undef;
 } 
 
+
+sub tick {
+  $self = shift;
+  if (-e "/var/secure_files/bot/remote.txt") {
+    ( $seclog, $minlog, $hourlog ) = (localtime)[0,1,2];
+    if (length($seclog) == 1) {
+      $seclog = "0".$seclog;
+    }
+    if (length($minlog) == 1) {
+      $minlog = "0".$minlog;
+    }
+    if (length($hourlog) == 1) {
+      $hourlog = "0".$hourlog;
+    }
+    $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
+    open(CMD, "/var/secure_files/bot/remote.txt");
+    $fetchcommand = <CMD>;
+    close(CMD);
+    $fetchcommand =~ s/\n//sgi;
+    unlink("/var/secure_files/bot/remote.txt");
+    ($command, $arg0, $arg1, $remoteip, $garbage) = split(/\|/,$fetchcommand);
+    unless ($command eq "MSG") {
+      $self->say(channel => "#sebastian", body => "[FJ\xC4RRSTYRNING] Fick ".$command." arg0=\"".$arg0."\" arg1=\"".$arg1."\" ifr\xE5n IP ".$remoteip);
+      push(@log, $timestampprefix."] <\@Anna> [FJ\xC4RRSTYRNING] Fick ".$command." arg0=\"".$arg0."\" arg1=\"".$arg1."\" ifr\xE5n IP ".$remoteip);
+      $logchanged = "true";
+      if ($#log > 40) {
+        shift(@log);
+      }
+    }
+    if ($command eq "GHOST") {
+      $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
+    }
+    if ($command eq "KICKBAN") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        $self->mode("#sebastian +b ".$banmask);
+        $self->kick("#sebastian", $arg0, $arg1);
+      }
+    }
+    if ($command eq "KICK") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        $self->kick("#sebastian", $arg0, $arg1);
+      }
+    }
+    if ($command eq "OP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          $self->mode("#sebastian +o ".$arg0);
+        }
+      }
+    }
+    if ($command eq "DEOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        $self->mode("#sebastian -o ".$arg0);
+      }
+    }
+    if ($command eq "HALFOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          $self->mode("#sebastian +h ".$arg0);
+        }
+      }
+    }
+    if ($command eq "DEHALFOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        $self->mode("#sebastian -h ".$arg0);
+      }
+    }
+    if ($command eq "VOICE") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          $self->mode("#sebastian +v ".$arg0);
+        }
+      }
+    }
+    if ($command eq "DEVOICE") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        $self->mode("#sebastian -v ".$arg0);
+      }
+    }
+    if ($command eq "CLRUSER") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$uidn} == 1) {
+          $msg{$uidn} = "0:0:0:0:0";
+        }
+      }
+    }
+    if ($command eq "OPBAN") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        $opban{$uidn} = 1;
+        $self->mode("#sebastian -voh ".$arg0);
+      }
+    }
+    if ($command eq "OPUNBAN") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        $opban{$uidn} = 0;
+      }
+    }
+
+    if ($command eq "USERCMD") {
+      if ($arg0 eq "true") {
+        $usercmd = "true";
+      }
+      else
+      {
+        $usercmd = "false";
+      }
+    }
+    if ($command eq "DEFCON") {
+      if ($arg0 eq "true") {
+        if ($defcon eq "false") {
+          $defcon = "true";
+          $oldtopic = $self->topic("#sebastian");
+          $self->mode("#sebastian +t");
+          $self->topic("#sebastian", "!! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
+        }
+      }
+      else
+      {
+        if ($defcon eq "true") {
+          $defcon = "false";
+          $self->mode("#sebastian -t");
+          $self->topic("#sebastian", $oldtopic);
+        }
+      }
+    }
+    if (($command eq "QB")||($command eq "QT")) {
+        $arg1 = lc($arg1);
+        $arg1 =~ s/\@//sgi;
+        $arg1 =~ s/\!//sgi;
+        if (length($arg1) > 0) {
+          @allusers = $self->channel_list("#sebastian");
+          if ($command eq "QT") {
+            $self->mode("#sebastian +b ".$arg1."*!".$arg1."*\@*.4uh.b8obtf.IP");
+            $dotor = "true";
+          }
+          else
+          {
+            $self->mode("#sebastian +b ".$arg1."*!".$arg1."*\@*");
+            $dotor = "false";
+          }
+          foreach $usernick (@allusers) {
+            $ufh = lc($self->pocoirc->nick_long_form($usernick));
+            ($un, $uh) = split(/\@/, $ufh);
+            ($bn, $bu) = split(/\!/, $un);
+            unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
+              if ((substr($bn,0,length($arg1)) eq $arg1)&&(substr($bu,0,length($arg1)) eq $arg1)) {
+                if ($dotor eq "true") {
+                  if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
+                    $self->kick("#sebastian", $usernick, "Inga spambottar h\xE4r, tack!");
+                  }
+                }
+                else
+                {
+                  $self->kick("#sebastian", $usernick, "Inga spambottar h\xE4r, tack!");
+                }
+              }
+            }
+          }
+        }
+    }
+    if ($command eq "MSG") {
+      $self->say(channel => "#sebastian", body => "[".$remoteip."]: ".$arg0);
+      push(@log, $timestampprefix."] <\@Anna> [".$remoteip."]: ".$arg0);
+      $logchanged = "true";
+      if ($#log > 40) {
+        shift(@log);
+      }
+    }
+  }
+  if ($logchanged eq "true") {
+    $logchanged = "false";
+    $channeldata = "";
+    @allnicks = $self->pocoirc->channel_list("#sebastian");
+    foreach $nick (@allnicks) {
+      $nickprefix = "";
+      if ($self->pocoirc->has_channel_voice("#sebastian",$nick) == 1) {
+        $nickprefix = "\+";
+      }
+      if ($self->pocoirc->is_channel_halfop("#sebastian",$nick) == 1) {
+        $nickprefix = "\%";
+      }
+      if ($self->pocoirc->is_channel_operator("#sebastian",$nick) == 1) {
+        $nickprefix = "\@";
+      }
+      if ($self->pocoirc->is_channel_admin("#sebastian",$nick) == 1) {
+        $nickprefix = "\&";
+      }
+      if ($self->pocoirc->is_channel_owner("#sebastian",$nick) == 1) {
+        $nickprefix = "\~";
+      }
+      $fullnick = $nickprefix.$nick;
+      $channeldata = $channeldata . $fullnick . "!!";
+    }
+    open(LOGCHANNEL, ">/var/secure_files/bot/logchannel.txt");
+    flock(LOGCHANNEL,2);
+    print LOGCHANNEL $channeldata . "|";
+    foreach $entry (@log) {
+      print LOGCHANNEL $entry."|";
+    }
+    close(LOGCHANNEL);
+  }
+
+  ( $day, $month, $year ) = (localtime)[3,4,5];
+  $currentdate = $day."-".($month+1)."-".($year+1900);
+  unless ($currentdate eq $lastclear) {
+    $lastclear = $currentdate;
+    foreach $k (keys %msg) {
+      unless ($opban{$k} == 1) {
+        $msg{$k} = "";
+      }
+    }
+    %hasnotwritten = ();
+    %ytlock = ();
+  }
+return 15;
+}
+
 sub chanpart { # This function is called everytime someone joins
   $self      = shift;
   $arguments = shift;
@@ -947,6 +1187,7 @@ sub chanpart { # This function is called everytime someone joins
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".");
+  $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
@@ -971,6 +1212,7 @@ sub userquit { # This function is called everytime someone joins
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
   push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".");
+  $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
