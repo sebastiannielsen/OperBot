@@ -16,9 +16,6 @@ if ($command eq "GHOST") {
   $arg0 = "-";
   $arg1 = "-";
 }
-if (($command eq "QB")||($command eq "QT")) {
-  $arg0 = "-";
-}
 
 if (($command eq "DEFCON")||($command eq "USERCMD")) {
   $arg1 = "-";
@@ -66,7 +63,7 @@ print FILE $command."|".$arg0."|".$arg1."|".$ENV{'REMOTE_ADDR'}."|";
 close(FILE);
 chmod("0777","/var/secure_files/bot/prepare.txt");
 chown(124,130,"/var/secure_files/bot/prepare.txt");
-rename("/var/secure_files/bot/prepare.txt","/var/secure_files/bot/remote.txt");
+Rrename("/var/secure_files/bot/prepare.txt","/var/secure_files/bot/remote.txt");
 
   startagain:
   if (-e "/var/secure_files/bot/remote.txt") {
@@ -96,8 +93,6 @@ print "<option value='HALFOP'>V&auml;xla HalfOP arg0=nick</option>";
 print "<option value='OP'>V&auml;xla OP arg0=nick</option>";
 print "<option value='OPBAN'>OP-banna arg0=nick</option>";
 print "<option value='OPUNBAN'>Ta bort OP-ban arg0=nick</option>";
-print "<option value='QB'>Botrensning utan TOR arg1=realname</option>";
-print "<option value='QT'>Botrensning med TOR arg1=realname</option>";
 print "<option value='DEFCON'>Defcon arg0=true/false</option>";
 print "<option value='USERCMD'>Aktivera anv&auml;ndarkommandon arg0=true/false</option>";
 print "</select> ";
