@@ -18,6 +18,10 @@ $defcon = "false";
 $usercmd = "true";
 $logchanged = "true";
 
+@spambot_full = ();
+@spambot_real = ();
+@oldurls = ();
+
 %opban = ();
 $opban{'areendopterygotes'} = 1; # Extremely non-grown person. Hope a LARGE caterpillar comes to his house and "accidentially"
                            # digs off his fiber cable so he is PERMANENTLY without internet. (a4r/drama)
@@ -25,11 +29,11 @@ $opban{'jjmj1u0baip'} = 1; # Same person as above (a4r/drama)
 $opban{'bsocietyse'} = 1;  # Same person as above (a4r/drama)
 $opban{'uhfos8d4eip'} = 1; # A person who likes to play with his OP functions when he is bored. (per)
 
-@rafarray = ("jag vill känna långlivad organisk glädje och lyfta denna förbannelsen", "du måste stirra in i denna kuben och FÖRSTÅ","jag visar dig de otänkbra!!","jag är ett hungerigt barn","mitt liv är i förödelse","kompster", "skåda den starkaste mjuk öra någonsin","ok kompis det är bara du och jag", "han kommer bli en stark pojke","glad jlu", "välkommen till sceniskt räfland", "vi har tassar,vi har äpple", "vad mer kan man begära", "kryddig het räf", "förståeligt","den sista biten", "jag ser, i den vacker dröm","jag vaknar, och har glömt","någonting fattas", "inge tålamod","när jag var hälften som du, var jag så här liten","men dubbelt utav mig är inte som nu","hej, jag är spöke som är efter din själ", "kan vi bli vän", "det är för riskabelt", "okej nu är det bara du och jag", "jag representerar denna världens hopp", "förtälj om din vishet", "jag är faktiskt bara liten", "nu går vi och spökar en kamrat", "tystnad mina barn", "jag bringar er en fest", "vilken förtjusande melodi", "jag äger tre flöjter", "tuut", "jag flyter förbi med goda nyheter", "wow vad är det","jag har upptäckt meningen", "meningen till vad", "mysterium", "absolut icke", "???", "!!!", "löf i mund dialekt", "ånga i ansikte dialekt", "varför gör du detta mot mig", "har du övervägt läg1man1", "vad är läg1man1", "gratulationer", "jag spökar ditt förflutet", "jag spökar ditt nuvarande", "jag !! spökar nästan", "jag vill inte spräcka din bubbla men", "boop", "tjena vänner kolla in denna ljuvliga bläckfisgen", "håll denna vännen", "fantastiskt", "nu kan vi observera gatorn medans den förföljer sitt byte", "den kommer mumsa!!","mums", "låt oss diskutera alla våra kunskaper och planer", "vänta tyst!!", "å nej", "wow det finns så många vacker klänning", "vilken ska jag välja", "ursäkta, det inte okej, beep och boop passar inte", "är du ok", "fixa", "T A C K F Ö R A T T D U L O G G A D E I N", "det är det enda sättet att hitta marshmeln", "min skapare vi har funnit", "det är fantastiskt", "synnerligen, helt säkert", "ojsan vad är det där","nyoom", "ooooooooooooooooooooooooooooooooooooo", "det jag, jag är molnet, titta: fhu~", "fhu~", "låt mig berätta, vän, jag vet vad det","tassfluff", "vänta det är inte längre ok", "bort från mig hunde, jag är ASFALT", "är du någonlunda kylig vill du ha en halsduk", "denna är till dig", "jag är en riktig hiss!!", "ok farväl vän", "nyoom", "låt oss gifta oss!!","ok!!","vi är gifta nu!!","ja!!", "låt oss gå till djurparken!", "hurra!");
-@lovea = ("pussar","slickar","gosar","smeker","lindar armarna om","kramar","klappar","myser","sniffar","nafsar","gnuggar","eskimåkysser");
-@loveb = ("försiktigt","mjukt","hårt","lungt","hjärtfyllt","älskande","varmt","gulligt","lyckligt");
-@morna = ("kaffe","senap","ärtor","jesus","MAMMA","köttbullar","aliens","små rymdgubbar","demoner","mina demoner","pers demoner","kebab","läsk","sockerdricka","citronbitare","potatos","potatosmos","kosttillskott","presenter","paket","sqli","horsepower","HORSEPOWER","stearinljus","böcker","husdjur","vinterjackan","tandborste","tandkräm","munskölj","toapapper","stekspade","elwisp","wisp","ostpizza","pizza");
-@mornb = ("på taket","på stolen","under stolen","på datorn","på bänken","under skrivbordet","i chloe","hos grannen","i kaffekoppen","i kylen","på vinden","hos dem som frågar","i badrumsskåpet","i kyrkan","på förskolan","på dagis","hemma hos per","i skålen","i hallen","i blodomloppet","i flaskan","på toasitsen","under golvbrädorna","under mattan","på hårddisken","i fåtöljen","i tyskland","i sundsvall","hemma hos chloe","inuti per");
+@rafarray = ("jag vill kÃ¤nna lÃ¥nglivad organisk glÃ¤dje och lyfta denna fÃ¶rbannelsen", "du mÃ¥ste stirra in i denna kuben och FÃ–RSTÃ…","jag visar dig de otÃ¤nkbra!!","jag Ã¤r ett hungerigt barn","mitt liv Ã¤r i fÃ¶rÃ¶delse","kompster", "skÃ¥da den starkaste mjuk Ã¶ra nÃ¥gonsin","ok kompis det Ã¤r bara du och jag", "han kommer bli en stark pojke","glad jlu", "vÃ¤lkommen till sceniskt rÃ¤fland", "vi har tassar,vi har Ã¤pple", "vad mer kan man begÃ¤ra", "kryddig het rÃ¤f", "fÃ¶rstÃ¥eligt","den sista biten", "jag ser, i den vacker drÃ¶m","jag vaknar, och har glÃ¶mt","nÃ¥gonting fattas", "inge tÃ¥lamod","nÃ¤r jag var hÃ¤lften som du, var jag sÃ¥ hÃ¤r liten","men dubbelt utav mig Ã¤r inte som nu","hej, jag Ã¤r spÃ¶ke som Ã¤r efter din sjÃ¤l", "kan vi bli vÃ¤n", "det Ã¤r fÃ¶r riskabelt", "okej nu Ã¤r det bara du och jag", "jag representerar denna vÃ¤rldens hopp", "fÃ¶rtÃ¤lj om din vishet", "jag Ã¤r faktiskt bara liten", "nu gÃ¥r vi och spÃ¶kar en kamrat", "tystnad mina barn", "jag bringar er en fest", "vilken fÃ¶rtjusande melodi", "jag Ã¤ger tre flÃ¶jter", "tuut", "jag flyter fÃ¶rbi med goda nyheter", "wow vad Ã¤r det","jag har upptÃ¤ckt meningen", "meningen till vad", "mysterium", "absolut icke", "???", "!!!", "lÃ¶f i mund dialekt", "Ã¥nga i ansikte dialekt", "varfÃ¶r gÃ¶r du detta mot mig", "har du Ã¶vervÃ¤gt lÃ¤g1man1", "vad Ã¤r lÃ¤g1man1", "gratulationer", "jag spÃ¶kar ditt fÃ¶rflutet", "jag spÃ¶kar ditt nuvarande", "jag !! spÃ¶kar nÃ¤stan", "jag vill inte sprÃ¤cka din bubbla men", "boop", "tjena vÃ¤nner kolla in denna ljuvliga blÃ¤ckfisgen", "hÃ¥ll denna vÃ¤nnen", "fantastiskt", "nu kan vi observera gatorn medans den fÃ¶rfÃ¶ljer sitt byte", "den kommer mumsa!!","mums", "lÃ¥t oss diskutera alla vÃ¥ra kunskaper och planer", "vÃ¤nta tyst!!", "Ã¥ nej", "wow det finns sÃ¥ mÃ¥nga vacker klÃ¤nning", "vilken ska jag vÃ¤lja", "ursÃ¤kta, det inte okej, beep och boop passar inte", "Ã¤r du ok", "fixa", "T A C K F Ã– R A T T D U L O G G A D E I N", "det Ã¤r det enda sÃ¤ttet att hitta marshmeln", "min skapare vi har funnit", "det Ã¤r fantastiskt", "synnerligen, helt sÃ¤kert", "ojsan vad Ã¤r det dÃ¤r","nyoom", "ooooooooooooooooooooooooooooooooooooo", "det jag, jag Ã¤r molnet, titta: fhu~", "fhu~", "lÃ¥t mig berÃ¤tta, vÃ¤n, jag vet vad det","tassfluff", "vÃ¤nta det Ã¤r inte lÃ¤ngre ok", "bort frÃ¥n mig hunde, jag Ã¤r ASFALT", "Ã¤r du nÃ¥gonlunda kylig vill du ha en halsduk", "denna Ã¤r till dig", "jag Ã¤r en riktig hiss!!", "ok farvÃ¤l vÃ¤n", "nyoom", "lÃ¥t oss gifta oss!!","ok!!","vi Ã¤r gifta nu!!","ja!!", "lÃ¥t oss gÃ¥ till djurparken!", "hurra!");
+@lovea = ("pussar","slickar","gosar","smeker","lindar armarna om","kramar","klappar","myser","sniffar","nafsar","gnuggar","eskimÃ¥kysser");
+@loveb = ("fÃ¶rsiktigt","mjukt","hÃ¥rt","lungt","hjÃ¤rtfyllt","Ã¤lskande","varmt","gulligt","lyckligt");
+@morna = ("kaffe","senap","Ã¤rtor","jesus","MAMMA","kÃ¶ttbullar","aliens","smÃ¥ rymdgubbar","demoner","mina demoner","pers demoner","kebab","lÃ¤sk","sockerdricka","citronbitare","potatos","potatosmos","kosttillskott","presenter","paket","sqli","horsepower","HORSEPOWER","stearinljus","bÃ¶cker","husdjur","vinterjackan","tandborste","tandkrÃ¤m","munskÃ¶lj","toapapper","stekspade","elwisp","wisp","ostpizza","pizza");
+@mornb = ("pÃ¥ taket","pÃ¥ stolen","under stolen","pÃ¥ datorn","pÃ¥ bÃ¤nken","under skrivbordet","i chloe","hos grannen","i kaffekoppen","i kylen","pÃ¥ vinden","hos dem som frÃ¥gar","i badrumsskÃ¥pet","i kyrkan","pÃ¥ fÃ¶rskolan","pÃ¥ dagis","hemma hos per","i skÃ¥len","i hallen","i blodomloppet","i flaskan","pÃ¥ toasitsen","under golvbrÃ¤dorna","under mattan","pÃ¥ hÃ¥rddisken","i fÃ¥tÃ¶ljen","i tyskland","i sundsvall","hemma hos chloe","inuti per");
 
 open(YTKEY, "./botkey.txt");
 $botytkey = <YTKEY>;
@@ -94,8 +98,11 @@ sub said {
       shift(@log);
     }
 
-    unless ($arguments->{body} =~ m/^\./) {
-      $lastseen{$arguments->{who}} = "<".$nickprefix.$arguments->{who}."[".$year."-".$month."-".$day."_".$hourlog.":".$minlog.":".$seclog."]> ".$arguments->{body}; 
+    if ($arguments->{body} =~ m/(https?:\/\/|www\.)([-a-z0-9+&\@#\/\%=~_|\$?!:,.]*)([a-z0-9+&\@#\/\%=~_|\$])/si) {
+      push(@oldurls, $1.$2.$3);
+      if ($#oldurls > 4) {
+        shift(@oldurls);
+      }
     }
 
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
@@ -105,6 +112,17 @@ sub said {
     $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
     $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
     if (($usercmd eq "true")||($isop == 1)||($ishp == 1)) {
+
+      unless ($arguments->{body} =~ m/^\.lastseen/) {
+        $lastseen{$arguments->{who}} = "<".$nickprefix.$arguments->{who}."[".$year."-".$month."-".$day."_".$hourlog.":".$minlog.":".$seclog."]> ".$arguments->{body}; 
+      }
+      if ($arguments->{body} eq ".oldurls") {
+        $allurls = "";
+        foreach $url (@oldurls) {
+          $allurls = $allurls . " " . $url;
+        }
+        $message = $arguments->{who}.": ".$allurls;
+      }
       if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
         $message = do_cryptocurrency($arguments->{body});
       }
@@ -117,7 +135,7 @@ sub said {
       if (($arguments->{body} =~ m/youtube\.com\/watch\?[^v]*v=([a-zA-Z0-9-_]*)/i)||($arguments->{body} =~ m/youtu\.be\/([a-zA-Z0-9-_]*)/i)) {
         $message = do_youtube($1);
       }
-      if ($arguments->{body} =~ m/^\.v(\xE4|ä)der (.+)/) {
+      if ($arguments->{body} =~ m/^\.v(\xE4|Ã¤)der (.+)/) {
         $message = do_weather($arguments->{who}, $2);
       }
       if ($arguments->{body} =~ m/^.pwdb ([_\-\@\!\+\.a-zA-Z0-9]*)/) {
@@ -139,21 +157,21 @@ sub said {
       }
       if ($arguments->{body} eq ".morn") {
         $message = "Godmorgon ".$arguments->{who}.", ".$morna[int(rand($#morna + 1))]." finns ".$mornb[int(rand($#mornb + 1))].".";
-        $message =~ s/ä/\xE4/sg;
-        $message =~ s/å/\xE5/sg;
-        $message =~ s/ö/\xF6/sg;
-        $message =~ s/Ä/\xC4/sg;
-        $message =~ s/Å/\xC5/sg;
-        $message =~ s/Ö/\xD6/sg;
+        $message =~ s/Ã¤/\xE4/sg;
+        $message =~ s/Ã¥/\xE5/sg;
+        $message =~ s/Ã¶/\xF6/sg;
+        $message =~ s/Ã„/\xC4/sg;
+        $message =~ s/Ã…/\xC5/sg;
+        $message =~ s/Ã–/\xD6/sg;
       }
-      if (($arguments->{body} eq ".r\xE4f")||($arguments->{body} eq ".räf")) {
+      if (($arguments->{body} eq ".r\xE4f")||($arguments->{body} eq ".rÃ¤f")) {
         $message = $rafarray[int(rand($#rafarray + 1))];
-        $message =~ s/ä/\xE4/sg;
-        $message =~ s/å/\xE5/sg;
-        $message =~ s/ö/\xF6/sg;
-        $message =~ s/Ä/\xC4/sg;
-        $message =~ s/Å/\xC5/sg;
-        $message =~ s/Ö/\xD6/sg;
+        $message =~ s/Ã¤/\xE4/sg;
+        $message =~ s/Ã¥/\xE5/sg;
+        $message =~ s/Ã¶/\xF6/sg;
+        $message =~ s/Ã„/\xC4/sg;
+        $message =~ s/Ã…/\xC5/sg;
+        $message =~ s/Ã–/\xD6/sg;
       }
 
       if ($arguments->{body} =~ m/^\.lastseen (.+)/) {
@@ -173,14 +191,14 @@ sub said {
         }
       }
 
-      if ($arguments->{body} =~ m/^\.(\xE4|ä)lska (.+)/) {
+      if ($arguments->{body} =~ m/^\.(\xE4|Ã¤)lska (.+)/) {
         $qemessage = $lovea[int(rand($#lovea + 1))]." ".$2." ".$loveb[int(rand($#loveb + 1))]." <3";
-        $qemessage =~ s/ä/\xE4/sg;
-        $qemessage =~ s/å/\xE5/sg;
-        $qemessage =~ s/ö/\xF6/sg;
-        $qemessage =~ s/Ä/\xC4/sg;
-        $qemessage =~ s/Å/\xC5/sg;
-        $qemessage =~ s/Ö/\xD6/sg;
+        $qemessage =~ s/Ã¤/\xE4/sg;
+        $qemessage =~ s/Ã¥/\xE5/sg;
+        $qemessage =~ s/Ã¶/\xF6/sg;
+        $qemessage =~ s/Ã„/\xC4/sg;
+        $qemessage =~ s/Ã…/\xC5/sg;
+        $qemessage =~ s/Ã–/\xD6/sg;
         $self->emote(channel => $arguments->{channel}, body => $qemessage);
         $qemessage = "";
         $message = "";
@@ -201,9 +219,9 @@ sub said {
         $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
         $isowner = $self->pocoirc->is_channel_owner($arguments->{channel},$arguments->{who});
         $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
-        $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad> | .lastseen <nick>";
+        $message = $arguments->{who}.": Jag st\xF6djer: .help | .cc (alias: .btc .xmr .ltc .bch .eth .xrp .doge) | .fetchlog | .pwdb <email> | .butkus | .per | .best\xE4m <val> | .lotto | .r\xE4f | .morn | .\xE4lska <namn> | .v\xE4der <stad> | .lastseen <nick> | .oldurls";
         if (($isop == 1)||($ishp == 1)) {
-          $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .usercmd | .qb <realname> | .qt <realname>";
+          $message = $message . "\n OP: .setwarn <nick> | .setkick <nick> | .status <nick> | .clruser <nick> | .clrall | .opmsg <msg> | .defcon | .usercmd";
           $opmessage = "true";
         }
         if ($isowner == 1) {
@@ -253,7 +271,7 @@ sub said {
           $message = $butkusline;
         }
       }
-      if ($arguments->{body} =~ m/^\.best(\xE4|ä)m (.+)/) {
+      if ($arguments->{body} =~ m/^\.best(\xE4|Ã¤)m (.+)/) {
         $datatodecide = $2;
         if ((length($datatodecide) > 8)&&($datatodecide =~ m/\seller\s/si)) {
           $checkerstring = $datatodecide;
@@ -263,12 +281,12 @@ sub said {
           $checkerstring =~ s/\xC4/a/sg;
           $checkerstring =~ s/\xC5/a/sg;
           $checkerstring =~ s/\xD6/o/sg;
-          $checkerstring =~ s/å/a/sg;
-          $checkerstring =~ s/ä/a/sg;
-          $checkerstring =~ s/ö/o/sg;
-          $checkerstring =~ s/Å/a/sg;
-          $checkerstring =~ s/Ä/a/sg;
-          $checkerstring =~ s/Ö/o/sg;
+          $checkerstring =~ s/Ã¥/a/sg;
+          $checkerstring =~ s/Ã¤/a/sg;
+          $checkerstring =~ s/Ã¶/o/sg;
+          $checkerstring =~ s/Ã…/a/sg;
+          $checkerstring =~ s/Ã„/a/sg;
+          $checkerstring =~ s/Ã–/o/sg;
           $checkerstring =~ s/0/o/sg;
           $checkerstring =~ s/1/l/sg;
           $checkerstring =~ s/2/z/sg;
@@ -290,7 +308,7 @@ sub said {
           {
             if (int($ytlock{'BTM!_COMMAND'.$checkerstring}) < time) {
               $ytlock{'BTM!_COMMAND'.$checkerstring} = time + 5*60;
-              $datatodecide =~ s/[^a-zA-Z0-9åäöÅÄÖ\xE4\xE5\xF6\xC4\xC5\xD6\;\,\:\.\-\_\!\"\@\#\£\$\%\&\/\(\[\)\]\=\}\?\\\+\*\'\<\>\| ]*//sg;
+              $datatodecide =~ s/[^a-zA-Z0-9Ã¥Ã¤Ã¶Ã…Ã„Ã–\xE4\xE5\xF6\xC4\xC5\xD6\;\,\:\.\-\_\!\"\@\#\Â£\$\%\&\/\(\[\)\]\=\}\?\\\+\*\'\<\>\| ]*//sg;
               @allrandom = split(/\seller\s/si, $datatodecide);
               $randvalue = $allrandom[int(rand($#allrandom + 1))];
               $message = $arguments->{who}.": ".$randvalue;
@@ -365,50 +383,6 @@ sub said {
         {
           $usercmd = "true";
           $message = $arguments->{who}.": Aktiverade alla anv\xE4ndarkommandon.";       
-        }
-      }
-    }
-
-    if ($arguments->{body} =~ m/^\.(qt|qb) (.+)/) {
-      $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$arguments->{who});
-      if ($isop == 1) {
-        $botban = lc($2);
-        $cmd = $1;
-        $botban =~ s/\@//sgi;
-        $botban =~ s/\!//sgi;
-        if (length($botban) > 0) {
-          @allusers = $self->channel_list($arguments->{channel});
-          if ($cmd eq "qt") {
-            $self->mode($arguments->{channel}." +b *!".$botban."*\@*.4uh.b8obtf.IP");
-            $dotor = "true";
-          }
-          else
-          {
-            $self->mode($arguments->{channel}." +b *!".$botban."*\@*");
-            $dotor = "false";
-          }
-          $botfound = 0;
-          foreach $usernick (@allusers) {
-            $ufh = lc($self->pocoirc->nick_long_form($usernick));
-            ($un, $uh) = split(/\@/, $ufh);
-            ($bn, $bu) = split(/\!/, $un);
-            unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
-              if (substr($bu,0,length($botban)) eq $botban) {
-                if ($dotor eq "true") {
-                  if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
-                    $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
-                    $botfound++;
-                  }
-                }
-                else
-                {
-                  $self->kick($arguments->{channel}, $usernick, "Inga spambottar h\xE4r, tack!");
-                  $botfound++;
-                }
-              }
-            }
-          }
-          $message = $arguments->{who}.": Hittade och bannade ".$botfound." spambottar i kanalen.";
         }
       }
     }
@@ -963,6 +937,8 @@ sub chanjoin { # This function is called everytime someone joins
   $hostname = $self->pocoirc->nick_long_form($arguments->{who});
   ($istor, $idnum, $displayid, $banmask) = getidfromhost($hostname);
   ($nickreal, $hostpart) = split(/\@/, $hostname);
+  ($usernick, $realpart) = split(/\!/, $nickreal);
+
    if (lc($arguments->{who}) eq "chloe") {
     if ($hostpart ne "chloe.chloe") {
       $self->mode($arguments->{channel}." +b ".$banmask);
@@ -977,6 +953,87 @@ sub chanjoin { # This function is called everytime someone joins
       transmitmail("Ghostade och bannade omogen person som fakenickar dig med host (".$hostpart.").\n");
     }
   }
+
+  unless (($arguments->{who} eq "Sebastian")||($arguments->{who} eq "Anna")||($arguments->{who} eq "chloe")||($hostname eq "Snell_Hest!Snell_Hest\@swehack-q25.4uh.b8obtf.IP")) {
+    unless ($spambot_full[0] eq $hostname) {
+      unshift(@spambot_full, $hostname);
+      unshift(@spambot_real, $realpart);
+      if ($#spambot_full > 2) {
+        pop(@spambot_full);
+      }
+      if ($#spambot_real > 2) {
+        pop(@spambot_real);
+      }
+      if ((length($spambot_full[0]) > 4)&&(length($spambot_full[1]) > 4)&&(length($spambot_full[2]) > 4)&&(length($spambot_real[0]) > 0)&&(length($spambot_real[1]) > 0)&&(length($spambot_real[2]) > 0)) {
+        #We are fully charged. Ready to ban spam-bots.
+        ($istor_a, $idnum_a, $displayid_a, $banmask_a) = getidfromhost($spambot_full[0]);
+        ($istor_b, $idnum_b, $displayid_b, $banmask_b) = getidfromhost($spambot_full[1]);
+        ($istor_c, $idnum_c, $displayid_c, $banmask_c) = getidfromhost($spambot_full[2]);
+        if (($displayid_a eq $displayid_b)&&($displayid_a eq $displayid_c)&&($displayid_b eq $displayid_c)) {
+          $lcp_ban = "";
+          $lcs_ban = "";
+          $lcp_ban = lcp(@spambot_real);
+          $lcs_ban = lcs(@spambot_real);
+          @allusers = $self->pocoirc->channel_list($arguments->{channel});
+
+          if (length($lcp_ban) > 1) {
+            if ($istor_a == 1) {
+              $self->mode($arguments->{channel}." +b *!".$lcp_ban."*\@*".$displayid_a);
+              $finalban_p = "*!".$lcp_ban."*\@*".$displayid_a;
+            }
+            else
+            {
+              $self->mode($arguments->{channel}." +b ".$banmask_a);
+              $finalban_p = $banmask_a;
+            }
+          }
+          if (length($lcs_ban) > 1) {
+            if ($istor_a == 1) {
+              $self->mode($arguments->{channel}." +b *!*".$lcs_ban."\@*".$displayid_a);
+              $finalban_s = "*!*".$lcs_ban."\@*".$displayid_a;
+            }
+            else
+            {
+              $self->mode($arguments->{channel}." +b ".$banmask_a);
+              $finalban_s = $banmask_a;
+            }
+          }
+
+          $botfound = 0;
+          foreach $suspect (@allusers) {
+            $ufh = $self->pocoirc->nick_long_form($suspect);
+            ($suspect_istor, $suspect_idnum, $suspect_display, $suspect_ban) = getidfromhost($ufh);
+            ($un, $uh) = split(/\@/, $ufh);
+            ($bn, $bu) = split(/\!/, $un);
+            $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$suspect);
+            $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$suspect);
+            $isad = $self->pocoirc->is_channel_admin($arguments->{channel},$suspect);
+            $isow = $self->pocoirc->is_channel_owner($arguments->{channel},$suspect);
+            $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$suspect);
+            $ircop = $self->pocoirc->is_operator($suspect);
+            $ign = $self->ignore_nick($suspect);
+            unless (($suspect eq "Anna")||($suspect eq "Sebastian")||($suspect eq "chloe")||($ufh eq "Snell_Hest!Snell_Hest\@swehack-q25.4uh.b8obtf.IP")) {
+              unless (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
+                if ($suspect_display eq $displayid_a) {
+                  if ((substr($bu,0,length($lcp_ban)) eq $lcp_ban)&&(length($lcp_ban) > 1)) {
+                    $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
+                    $botfound++;
+                  }
+                  $cutlimit = length($bu) - length($lcs_ban);
+                  if ((substr($bu,$cutlimit,length($lcs_ban)) eq $lcs_ban)&&(length($lcs_ban) > 1)&&($cutlimit > -1)) {
+                    $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
+                    $botfound++;
+                  }
+                }
+              }
+            }
+          }
+          transmitmail("Hittade och bannade ".$botfound." spambottar i din kanal baserat p\xE5 prefix ".$lcp_ban." och/eller suffix ".$lcs_ban.". Bannade prefix=".$finalban_p." och suffix=".$finalban_s." .");
+        }
+      }
+    }
+  }
+
   return undef;
 } 
 
@@ -1112,41 +1169,7 @@ sub tick {
         }
       }
     }
-    if (($command eq "QB")||($command eq "QT")) {
-        $arg1 = lc($arg1);
-        $arg1 =~ s/\@//sgi;
-        $arg1 =~ s/\!//sgi;
-        if (length($arg1) > 0) {
-          @allusers = $self->channel_list("#sebastian");
-          if ($command eq "QT") {
-            $self->mode("#sebastian +b *!".$arg1."*\@*.4uh.b8obtf.IP");
-            $dotor = "true";
-          }
-          else
-          {
-            $self->mode("#sebastian +b *!".$arg1."*\@*");
-            $dotor = "false";
-          }
-          foreach $usernick (@allusers) {
-            $ufh = lc($self->pocoirc->nick_long_form($usernick));
-            ($un, $uh) = split(/\@/, $ufh);
-            ($bn, $bu) = split(/\!/, $un);
-            unless (($usernick eq "Anna")||($usernick eq "Sebastian")||($usernick eq "chloe")) {
-              if (substr($bu,0,length($arg1)) eq $arg1) {
-                if ($dotor eq "true") {
-                  if ($uh =~ m/\.4uh\.b8obtf\.IP$/) {
-                    $self->kick("#sebastian", $usernick, "Inga spambottar h\xE4r, tack!");
-                  }
-                }
-                else
-                {
-                  $self->kick("#sebastian", $usernick, "Inga spambottar h\xE4r, tack!");
-                }
-              }
-            }
-          }
-        }
-    }
+
     if ($command eq "MSG") {
       $self->say(channel => "#sebastian", body => "[".$remoteip."]: ".$arg0);
       push(@log, $timestampprefix."] <\@Anna> [".$remoteip."]: ".$arg0);
@@ -1246,13 +1269,13 @@ sub userquit { # This function is called everytime someone joins
     $hourlog = "0".$hourlog;
   }
   $timestampprefix = "[".$hourlog.":".$minlog.":".$seclog;
-  push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}.".");
+  push(@log, $timestampprefix. "] *** ".$arguments->{who}." l\xE4mnade servern.");
   $logchanged = "true";
   if ($#log > 40) {
     shift(@log);
   }
   if ($iswatched{$arguments->{who}} eq "1") {
-    transmitmail("Den vaktade personen ".$arguments->{who}." l\xE4mnade ".$arguments->{channel}."\n");
+    transmitmail("Den vaktade personen ".$arguments->{who}." l\xE4mnade servern\n");
   }
   return undef;
 }
@@ -1260,16 +1283,17 @@ sub userquit { # This function is called everytime someone joins
 sub do_weather { # This function corresponds to the weather function
   $human = $_[0];
   $city = lc($_[1]);
-  $city =~ s/Ä/\xE4/sg;
-  $city =~ s/Å/\xE5/sg;
-  $city =~ s/Ö/\xF6/sg;
+  $city =~ s/Ã„/\xE4/sg;
+  $city =~ s/Ã…/\xE5/sg;
+  $city =~ s/Ã–/\xF6/sg;
   $city =~ s/\xC4/\xE4/sg;
   $city =~ s/\xC5/\xE5/sg;
   $city =~ s/\xD6/\xF6/sg;
-  $city =~ s/ä/\xE4/sg;
-  $city =~ s/å/\xE5/sg;
-  $city =~ s/ö/\xF6/sg;
-  $city =~ s/[^abcdefghijklmnopqrstuvwxyz\xE5\xE4\xF6]*//sg;
+  $city =~ s/Ã¤/\xE4/sg;
+  $city =~ s/Ã¥/\xE5/sg;
+  $city =~ s/Ã¶/\xF6/sg;
+  $city =~ s/\s/+/sg;
+  $city =~ s/[^abcdefghijklmnopqrstuvwxyz\xE5\xE4\xF6+]*//sg;
   $rawmess = "";
   if (int($ytlock{'DOWEATHER!_FETCH'}) < time) {
     $ytlock{'DOWEATHER!_FETCH'} = time + 20;
@@ -1318,7 +1342,7 @@ sub do_weather { # This function corresponds to the weather function
         $cityname = $1;
       }
       if ($success eq "true") {
-        $rawmess = $human.": Vädret i ".$cityname.": ".$descriptions.$temperature." *C, ".$windspeed." m/s, ".$humidity." \% luftfuktighet, ".$clouds." \% molntäcke, ".$pressure." hPa";
+        $rawmess = $human.": VÃ¤dret i ".$cityname.": ".$descriptions.$temperature." *C, ".$windspeed." m/s, ".$humidity." \% luftfuktighet, ".$clouds." \% molntÃ¤cke, ".$pressure." hPa";
       }
       else
       {
@@ -1330,13 +1354,13 @@ sub do_weather { # This function corresponds to the weather function
           $rawmess = $human.": Oj. OpenWeatherMap verkar ligga nere.";
         }
       }
-      $rawmess =~ s/ä/\xE4/sg;
-      $rawmess =~ s/å/\xE5/sg;
-      $rawmess =~ s/ö/\xF6/sg;
-      $rawmess =~ s/Ä/\xC4/sg;
-      $rawmess =~ s/Å/\xC5/sg;
-      $rawmess =~ s/Ö/\xD6/sg;
-      $ytlock{'DOWEATHER!_CACHE'.$city} = time + 3600;
+      $rawmess =~ s/Ã¤/\xE4/sg;
+      $rawmess =~ s/Ã¥/\xE5/sg;
+      $rawmess =~ s/Ã¶/\xF6/sg;
+      $rawmess =~ s/Ã„/\xC4/sg;
+      $rawmess =~ s/Ã…/\xC5/sg;
+      $rawmess =~ s/Ã–/\xD6/sg;
+      $ytlock{'DOWEATHER!_CACHE'.$city} = time + 1800;
       $ytlock{'DOWEATHER!_CACHECONTENT'.$city} = $rawmess;
       $rawmess = $rawmess . " [live]";
     }
@@ -1357,12 +1381,12 @@ sub do_opmsg { # This function corresponds to .opmsg
   if ($isop == 1) {
     if ((int($ytlock{'OPMSG!_FUNCTION'}) < time)||($isown == 1)) {
       $ytlock{'OPMSG!_FUNCTION'} = time + 30*60;
-      $inmessage =~ s/ä/\xE4/sg;
-      $inmessage =~ s/å/\xE5/sg;
-      $inmessage =~ s/ö/\xF6/sg;
-      $inmessage =~ s/Ä/\xC4/sg;
-      $inmessage =~ s/Å/\xC5/sg;
-      $inmessage =~ s/Ö/\xD6/sg;
+      $inmessage =~ s/Ã¤/\xE4/sg;
+      $inmessage =~ s/Ã¥/\xE5/sg;
+      $inmessage =~ s/Ã¶/\xF6/sg;
+      $inmessage =~ s/Ã„/\xC4/sg;
+      $inmessage =~ s/Ã…/\xC5/sg;
+      $inmessage =~ s/Ã–/\xD6/sg;
       transmitmail("OP-meddelande fr\xE5n ".$human." via OPMSG. Meddelandet \xE4r:\n".$inmessage."\n\n");
       $message = $human.": Meddelande skickat!";
     }
@@ -1425,12 +1449,12 @@ sub do_youtube { # This function is called anytime a Youtube URL is encountered.
           }
         }
         $ytline =~ s/\\//sgi;
-        $ytline =~ s/ä/\xE4/sg;
-        $ytline =~ s/å/\xE5/sg;
-        $ytline =~ s/ö/\xF6/sg;
-        $ytline =~ s/Ä/\xC4/sg;
-        $ytline =~ s/Å/\xC5/sg;
-        $ytline =~ s/Ö/\xD6/sg;
+        $ytline =~ s/Ã¤/\xE4/sg;
+        $ytline =~ s/Ã¥/\xE5/sg;
+        $ytline =~ s/Ã¶/\xF6/sg;
+        $ytline =~ s/Ã„/\xC4/sg;
+        $ytline =~ s/Ã…/\xC5/sg;
+        $ytline =~ s/Ã–/\xD6/sg;
         $ytline = $ytline . " - " . $fulldur . $views . $subject . " (Gillas: ".$percentage."\%)";
       }
       unless ($ytline eq "fail") {
@@ -1517,7 +1541,7 @@ $inmess = $_[0];
   if (int($ytlock{'CRYPTOCURRENCY!_FETCH'}) < time) {
     $ytlock{'CRYPTOCURRENCY!_FETCH'} = time + 5*60;
     if (int($ytlock{'CRYPTOCURRENCY!_CACHE'}) < time) {
-      $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=40');
+      $response = $ua->get('https://api.coinmarketcap.com/v1/ticker/?convert=SEK&limit=50');
       $rbody = $response->decoded_content;
       $rbody =~ s/\n//sgi;
       $rbody =~ s/\r//sgi;
@@ -1629,6 +1653,26 @@ sub getidfromhost { #This function calculates if a user is the .onion TOR endpoi
   return ($istor, $idnum, $displayid, $banmask);
 }
 
+
+sub lcp {
+    $prefix = shift;
+    for (@_) {
+      while (! m/^\Q$prefix\E/) {
+        $prefix =~ s/.$//si;
+      }
+    }
+    return $prefix;
+}
+
+sub lcs {
+    $suffix = shift;
+    for (@_) {
+      while (! m/\Q$suffix\E$/) {
+        $suffix =~ s/^.//si;
+      }
+    }
+    return $suffix;
+}
 
 sub numprettify { # This function visually prettifies a float. This by rounding off to 3 decimals if the integer is lower than 10, else it strips off decimals completely. And then adding spaces each 3rd digit.
   $number = $_[0];
