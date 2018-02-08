@@ -441,6 +441,7 @@ sub said {
             ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($user));
             $opban{$uidn} = 1;
             $self->mode($arguments->{channel}." -voh ".$user);
+            $self->say(channel => "msg", who => "ChanServ", body => "ACCESS ".$arguments->{channel}." DEL ".$user);
             $message = $arguments->{who}.": OP-bannade ".$user.". (".$uidn.")";
           }
           else
@@ -954,8 +955,8 @@ sub chanjoin { # This function is called everytime someone joins
     }
   }
 
-  unless (($arguments->{who} eq "Sebastian")||($arguments->{who} eq "Anna")||($arguments->{who} eq "chloe")||($hostname eq "Snell_Hest!Snell_Hest\@swehack-q25.4uh.b8obtf.IP")) {
-    unless ($spambot_full[0] eq $hostname) {
+  unless (($arguments->{who} eq "Sebastian")||($arguments->{who} eq "Anna")||($arguments->{who} eq "chloe")) {
+    unless (($spambot_full[0] eq $hostname)||($spambot_full[1] eq $hostname)||($spambot_full[2] eq $hostname)) {
       unshift(@spambot_full, $hostname);
       unshift(@spambot_real, $realpart);
       if ($#spambot_full > 2) {
@@ -1012,7 +1013,7 @@ sub chanjoin { # This function is called everytime someone joins
             $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$suspect);
             $ircop = $self->pocoirc->is_operator($suspect);
             $ign = $self->ignore_nick($suspect);
-            unless (($suspect eq "Anna")||($suspect eq "Sebastian")||($suspect eq "chloe")||($ufh eq "Snell_Hest!Snell_Hest\@swehack-q25.4uh.b8obtf.IP")) {
+            unless (($suspect eq "Anna")||($suspect eq "Sebastian")||($suspect eq "chloe")) {
               unless (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
                 if ($suspect_display eq $displayid_a) {
                   if ((substr($bu,0,length($lcp_ban)) eq $lcp_ban)&&(length($lcp_ban) > 1)) {
@@ -1069,55 +1070,109 @@ sub tick {
     if ($command eq "GHOST") {
       $self->say(channel => "msg", who => "NickServ", body => "GHOST sebastian ".$ghostpassword);
     }
+    if ($command eq "CHANSERVDEL") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian DEL ".$arg0);
+        }
+      }
+    }
+    if ($command eq "CHANSERVAOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." AOP");
+          }
+        }
+      }
+    }
+    if ($command eq "CHANSERVVOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." VOP");
+          }
+        }
+      }
+    }
+    if ($command eq "CHANSERVHOP") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." HOP");
+          }
+        }
+      }
+    }
     if ($command eq "KICKBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
-        $self->mode("#sebastian +b ".$banmask);
-        $self->kick("#sebastian", $arg0, $arg1);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")) {
+          $self->mode("#sebastian +b ".$banmask);
+          $self->kick("#sebastian", $arg0, $arg1);
+        }
       }
     }
     if ($command eq "KICK") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        $self->kick("#sebastian", $arg0, $arg1);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")) {
+          $self->kick("#sebastian", $arg0, $arg1);
+        }
       }
     }
     if ($command eq "OP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          $self->mode("#sebastian +o ".$arg0);
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->mode("#sebastian +o ".$arg0);
+          }
         }
       }
     }
     if ($command eq "DEOP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        $self->mode("#sebastian -o ".$arg0);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          $self->mode("#sebastian -o ".$arg0);
+        }
       }
     }
     if ($command eq "HALFOP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          $self->mode("#sebastian +h ".$arg0);
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->mode("#sebastian +h ".$arg0);
+          }
         }
       }
     }
     if ($command eq "DEHALFOP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        $self->mode("#sebastian -h ".$arg0);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          $self->mode("#sebastian -h ".$arg0);
+        }
       }
     }
     if ($command eq "VOICE") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          $self->mode("#sebastian +v ".$arg0);
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+            $self->mode("#sebastian +v ".$arg0);
+          }
         }
       }
     }
     if ($command eq "DEVOICE") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        $self->mode("#sebastian -v ".$arg0);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          $self->mode("#sebastian -v ".$arg0);
+        }
       }
     }
     if ($command eq "CLRUSER") {
@@ -1130,15 +1185,20 @@ sub tick {
     }
     if ($command eq "OPBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
-        $opban{$uidn} = 1;
-        $self->mode("#sebastian -voh ".$arg0);
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+          $opban{$uidn} = 1;
+          $self->mode("#sebastian -voh ".$arg0);
+          $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian DEL ".$arg0);
+        }
       }
     }
     if ($command eq "OPUNBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
-        $opban{$uidn} = 0;
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+          $opban{$uidn} = 0;
+        }
       }
     }
 
