@@ -24,7 +24,7 @@ if (($command eq "DEFCON")||($command eq "USERCMD")) {
   }
 }
 
-if (($command eq "OP")||($command eq "HALFOP")||($command eq "VOICE")||($command eq "CLRUSER")||($command eq "OPBAN")||($command eq "OPUNBAN")) {
+if (($command eq "OP")||($command eq "HALFOP")||($command eq "VOICE")||($command eq "CLRUSER")||($command eq "OPBAN")||($command eq "OPUNBAN")||($command eq "CHANSERVDEL")||($command eq "CHANSERVAOP")||($command eq "CHANSERVVOP")||($command eq "CHANSERVHOP")) {
   $arg1 = "-";
 }
 
@@ -85,6 +85,10 @@ $chandata = shift(@chatentrys);
 print "<form action='remote.cgi' method='post'>";
 print "<select name='command'>";
 print "<option value='GHOST'>Ghosta m&ouml;g som missbrukar mitt nick i #laidback</option>";
+print "<option value='CHANSERVDEL'>Radera ChanServ-beh&ouml;righeter arg0=nick</option>";
+print "<option value='CHANSERVAOP'>L&auml;gg till ChanServ-OP arg0=nick</option>";
+print "<option value='CHANSERVHOP'>L&auml;gg till ChanServ-HalfOP arg0=nick</option>";
+print "<option value='CHANSERVVOP'>L&auml;gg till ChanServ-Voice arg0=nick</option>";
 print "<option value='KICKBAN'>Kickbanna arg0=nick arg1=reason</option>";
 print "<option value='KICK'>Kicka arg0=nick arg1=reason</option>";
 print "<option value='CLRUSER'>Rensa anv&auml;ndare arg0=nick</option>";
