@@ -63,7 +63,7 @@ print FILE $command."|".$arg0."|".$arg1."|".$ENV{'REMOTE_ADDR'}."|";
 close(FILE);
 chmod("0777","/var/secure_files/bot/prepare.txt");
 chown(124,130,"/var/secure_files/bot/prepare.txt");
-Rrename("/var/secure_files/bot/prepare.txt","/var/secure_files/bot/remote.txt");
+rename("/var/secure_files/bot/prepare.txt","/var/secure_files/bot/remote.txt");
 
   startagain:
   if (-e "/var/secure_files/bot/remote.txt") {
