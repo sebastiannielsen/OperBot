@@ -98,13 +98,22 @@ sub said {
       shift(@log);
     }
 
-    if ($arguments->{body} =~ m/(https?:\/\/|www\.)([-a-z0-9+&\@#\/\%=~_|\$?!:,.]*)([a-z0-9+&\@#\/\%=~_|\$])/si) {
-      push(@oldurls, $1.$2.$3);
-      if ($#oldurls > 4) {
-        shift(@oldurls);
+    if ($arguments->{body} =~ m/(https?:\/\/|www\.)([-a-z0-9+&\@#\/\%=~_|\$?!:,.]*)/si) {
+      $fullurl = $1.$2;
+      unless ($fullurl =~ m/^https?:\/\//) {
+        $fullurl = "http://".$fullurl;
+      }
+      if ($fullurl =~ m/^https?:\/\/([0-9a-z_\-.])+\/?([-a-z0-9+&\@#\/\%=~_|\$?!:,.]*)$/si) {
+        push(@oldurls, $fullurl);
+        if ($#oldurls > 4) {
+          shift(@oldurls);
+        }
       }
     }
 
+    unless ($arguments->{body} =~ m/^\.lastseen/) {
+      $lastseen{$arguments->{who}} = "<".$nickprefix.$arguments->{who}."[".$year."-".$month."-".$day."_".$hourlog.":".$minlog.":".$seclog."]> ".$arguments->{body}; 
+    }
     if ($arguments->{body} =~ m/^\.opmsg (.+)/) {
       $message = do_opmsg($arguments->{who}, $1, ($self->pocoirc->is_channel_operator($arguments->{channel}, $arguments->{who})||$self->pocoirc->is_channel_halfop($arguments->{channel}, $arguments->{who})), $self->pocoirc->is_channel_owner($arguments->{channel}, $arguments->{who}));
     }
@@ -113,15 +122,15 @@ sub said {
     $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$arguments->{who});
     if (($usercmd eq "true")||($isop == 1)||($ishp == 1)) {
 
-      unless ($arguments->{body} =~ m/^\.lastseen/) {
-        $lastseen{$arguments->{who}} = "<".$nickprefix.$arguments->{who}."[".$year."-".$month."-".$day."_".$hourlog.":".$minlog.":".$seclog."]> ".$arguments->{body}; 
-      }
       if ($arguments->{body} eq ".oldurls") {
-        $allurls = "";
-        foreach $url (@oldurls) {
-          $allurls = $allurls . " " . $url;
+        if (int($ytlock{'ALLURLS!_COMMAND'}) < time) {
+          $ytlock{'ALLURLS!_COMMAND'} = time + 5*60;
+          $allurls = "";
+          foreach $url (@oldurls) {
+            $allurls = $allurls . " " . $url;
+          }
+          $message = $arguments->{who}.": ".$allurls;
         }
-        $message = $arguments->{who}.": ".$allurls;
       }
       if (($arguments->{body} eq ".btc")||($arguments->{body} eq ".cc")||($arguments->{body} eq ".ltc")||($arguments->{body} eq ".xmr")||($arguments->{body} eq ".bch")||($arguments->{body} eq ".xrp")||($arguments->{body} eq ".eth")||($arguments->{body} eq ".doge")) {
         $message = do_cryptocurrency($arguments->{body});
@@ -591,18 +600,25 @@ sub said {
           }
           $message = $arguments->{who}.": Rensade alla anv\xE4ndare utom de som \xE4r OP-bannade.";
         }
+
         if ($arguments->{body} eq ".defcon") {
           if ($defcon eq "false") {
             $defcon = "true";
-            $oldtopic = $self->topic($arguments->{channel});
+            $oldtopic = $self->pocoirc->channel_topic($arguments->{channel})->{Value};
+            $oldtopic =~ s/ä/\xE4/sg;
+            $oldtopic =~ s/å/\xE5/sg;
+            $oldtopic =~ s/ö/\xF6/sg;
+            $oldtopic =~ s/Ä/\xC4/sg;
+            $oldtopic =~ s/Å/\xC5/sg;
+            $oldtopic =~ s/Ö/\xD6/sg;
             $self->mode($arguments->{channel}." +t");
-            $self->topic($arguments->{channel}, "!! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
+            $self->quote("TOPIC ".$arguments->{channel}." !! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
           }
           else
           {
             $defcon = "false";
             $self->mode($arguments->{channel}." -t");
-            $self->topic($arguments->{channel}, $oldtopic);
+            $self->quote("TOPIC ".$arguments->{channel}." ".$oldtopic);
           }
         }
       }
@@ -999,37 +1015,38 @@ sub chanjoin { # This function is called everytime someone joins
               $finalban_s = $banmask_a;
             }
           }
-
-          $botfound = 0;
-          foreach $suspect (@allusers) {
-            $ufh = $self->pocoirc->nick_long_form($suspect);
-            ($suspect_istor, $suspect_idnum, $suspect_display, $suspect_ban) = getidfromhost($ufh);
-            ($un, $uh) = split(/\@/, $ufh);
-            ($bn, $bu) = split(/\!/, $un);
-            $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$suspect);
-            $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$suspect);
-            $isad = $self->pocoirc->is_channel_admin($arguments->{channel},$suspect);
-            $isow = $self->pocoirc->is_channel_owner($arguments->{channel},$suspect);
-            $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$suspect);
-            $ircop = $self->pocoirc->is_operator($suspect);
-            $ign = $self->ignore_nick($suspect);
-            unless (($suspect eq "Anna")||($suspect eq "Sebastian")||($suspect eq "chloe")) {
-              unless (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
-                if ($suspect_display eq $displayid_a) {
-                  if ((substr($bu,0,length($lcp_ban)) eq $lcp_ban)&&(length($lcp_ban) > 1)) {
-                    $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
-                    $botfound++;
-                  }
-                  $cutlimit = length($bu) - length($lcs_ban);
-                  if ((substr($bu,$cutlimit,length($lcs_ban)) eq $lcs_ban)&&(length($lcs_ban) > 1)&&($cutlimit > -1)) {
-                    $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
-                    $botfound++;
+          if ((length($lcp_ban) > 1)||(length($lcs_ban) > 1)) {
+            $botfound = 0;
+            foreach $suspect (@allusers) {
+              $ufh = $self->pocoirc->nick_long_form($suspect);
+              ($suspect_istor, $suspect_idnum, $suspect_display, $suspect_ban) = getidfromhost($ufh);
+              ($un, $uh) = split(/\@/, $ufh);
+              ($bn, $bu) = split(/\!/, $un);
+              $isop = $self->pocoirc->is_channel_operator($arguments->{channel},$suspect);
+              $ishp = $self->pocoirc->is_channel_halfop($arguments->{channel},$suspect);
+              $isad = $self->pocoirc->is_channel_admin($arguments->{channel},$suspect);
+              $isow = $self->pocoirc->is_channel_owner($arguments->{channel},$suspect);
+              $isv = $self->pocoirc->has_channel_voice($arguments->{channel},$suspect);
+              $ircop = $self->pocoirc->is_operator($suspect);
+              $ign = $self->ignore_nick($suspect);
+              unless (($suspect eq "Anna")||($suspect eq "Sebastian")||($suspect eq "chloe")) {
+                unless (($isop == 1)||($ishp == 1)||($isad == 1)||($isow == 1)||($isv == 1)||($ircop == 1)||($ign == 1)) {
+                  if ($suspect_display eq $displayid_a) {
+                    if ((substr($bu,0,length($lcp_ban)) eq $lcp_ban)&&(length($lcp_ban) > 1)) {
+                      $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
+                      $botfound++;
+                    }
+                    $cutlimit = length($bu) - length($lcs_ban);
+                    if ((substr($bu,$cutlimit,length($lcs_ban)) eq $lcs_ban)&&(length($lcs_ban) > 1)&&($cutlimit > -1)) {
+                      $self->kick($arguments->{channel}, $suspect, "Inga spambottar h\xE4r, tack!");
+                      $botfound++;
+                    }
                   }
                 }
               }
             }
+            transmitmail("Hittade och bannade ".$botfound." spambottar i din kanal baserat p\xE5 prefix ".$lcp_ban." och/eller suffix ".$lcs_ban.". Bannade prefix=".$finalban_p." och suffix=".$finalban_s." .");
           }
-          transmitmail("Hittade och bannade ".$botfound." spambottar i din kanal baserat p\xE5 prefix ".$lcp_ban." och/eller suffix ".$lcs_ban.". Bannade prefix=".$finalban_p." och suffix=".$finalban_s." .");
         }
       }
     }
@@ -1037,6 +1054,22 @@ sub chanjoin { # This function is called everytime someone joins
 
   return undef;
 } 
+
+
+sub topic {
+  $self = shift;
+  $arguments = shift;
+  if (($defcon eq "true")&&($arguments->{who} ne "Anna")) {
+    $oldtopic = $arguments->{topic};
+    $oldtopic =~ s/ä/\xE4/sg;
+    $oldtopic =~ s/å/\xE5/sg;
+    $oldtopic =~ s/ö/\xF6/sg;
+    $oldtopic =~ s/Ä/\xC4/sg;
+    $oldtopic =~ s/Å/\xC5/sg;
+    $oldtopic =~ s/Ö/\xD6/sg;
+    $self->quote("TOPIC ".$arguments->{channel}." !! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
+  }
+}
 
 
 sub tick {
@@ -1073,8 +1106,18 @@ sub tick {
     if ($command eq "CHANSERVDEL") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian DEL ".$arg0);
+        }
+      }
+    }
+    if ($command eq "CHANSERVPRT") {
+      if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
+        ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
+        unless ($opban{$idnum} == 1) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
+            $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." PROTECT");
+          }
         }
       }
     }
@@ -1082,7 +1125,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." AOP");
           }
         }
@@ -1092,7 +1135,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." VOP");
           }
         }
@@ -1102,7 +1145,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->say(channel => "msg", who => "ChanServ", body => "ACCESS #sebastian ADD ".$arg0." HOP");
           }
         }
@@ -1111,7 +1154,7 @@ sub tick {
     if ($command eq "KICKBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")||(lc($arg0) eq "chanserv")) {
           $self->mode("#sebastian +b ".$banmask);
           $self->kick("#sebastian", $arg0, $arg1);
         }
@@ -1119,7 +1162,7 @@ sub tick {
     }
     if ($command eq "KICK") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chloe")||(lc($arg0) eq "chanserv")) {
           $self->kick("#sebastian", $arg0, $arg1);
         }
       }
@@ -1128,7 +1171,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->mode("#sebastian +o ".$arg0);
           }
         }
@@ -1136,7 +1179,7 @@ sub tick {
     }
     if ($command eq "DEOP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           $self->mode("#sebastian -o ".$arg0);
         }
       }
@@ -1145,7 +1188,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->mode("#sebastian +h ".$arg0);
           }
         }
@@ -1153,7 +1196,7 @@ sub tick {
     }
     if ($command eq "DEHALFOP") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           $self->mode("#sebastian -h ".$arg0);
         }
       }
@@ -1162,7 +1205,7 @@ sub tick {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
         ($istor, $idnum, $displayid, $banmask) = getidfromhost($self->pocoirc->nick_long_form($arg0));
         unless ($opban{$idnum} == 1) {
-          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+          unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
             $self->mode("#sebastian +v ".$arg0);
           }
         }
@@ -1170,7 +1213,7 @@ sub tick {
     }
     if ($command eq "DEVOICE") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           $self->mode("#sebastian -v ".$arg0);
         }
       }
@@ -1185,7 +1228,7 @@ sub tick {
     }
     if ($command eq "OPBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
           $opban{$uidn} = 1;
           $self->mode("#sebastian -voh ".$arg0);
@@ -1195,7 +1238,7 @@ sub tick {
     }
     if ($command eq "OPUNBAN") {
       if ($self->pocoirc->is_channel_member("#sebastian",$arg0) == 1) {
-        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")) {
+        unless ((lc($arg0) eq "sebastian")||(lc($arg0) eq "anna")||(lc($arg0) eq "chanserv")) {
           ($uist, $uidn, $udisp, $uban) = getidfromhost($self->pocoirc->nick_long_form($arg0));
           $opban{$uidn} = 0;
         }
@@ -1215,9 +1258,15 @@ sub tick {
       if ($arg0 eq "true") {
         if ($defcon eq "false") {
           $defcon = "true";
-          $oldtopic = $self->topic("#sebastian");
+          $oldtopic = $self->pocoirc->channel_topic("#sebastian")->{Value};
+          $oldtopic =~ s/ä/\xE4/sg;
+          $oldtopic =~ s/å/\xE5/sg;
+          $oldtopic =~ s/ö/\xF6/sg;
+          $oldtopic =~ s/Ä/\xC4/sg;
+          $oldtopic =~ s/Å/\xC5/sg;
+          $oldtopic =~ s/Ö/\xD6/sg;
           $self->mode("#sebastian +t");
-          $self->topic("#sebastian", "!! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
+          $self->quote("TOPIC #sebastian !! VARNING !! Undantagstillst\xE5nd r\xE5der. Ni som \xE4r anslutna via TOR, skriv inte utan inv\xE4nta voice fr\xE5n kanaloperat\xF6r innan ni skriver! Inga varningar kommer ges innan ban !!");
         }
       }
       else
@@ -1225,8 +1274,21 @@ sub tick {
         if ($defcon eq "true") {
           $defcon = "false";
           $self->mode("#sebastian -t");
-          $self->topic("#sebastian", $oldtopic);
+          $self->quote("TOPIC #sebastian ".$oldtopic);
         }
+      }
+    }
+
+    if ($command eq "SETTOPIC") {
+      if ($defcon eq "false") {
+        $settopic = $arg1;
+        $settopic =~ s/ä/\xE4/sg;
+        $settopic =~ s/å/\xE5/sg;
+        $settopic =~ s/ö/\xF6/sg;
+        $settopic =~ s/Ä/\xC4/sg;
+        $settopic =~ s/Å/\xC5/sg;
+        $settopic =~ s/Ö/\xD6/sg;
+        $self->quote("TOPIC #sebastian ".$settopic);
       }
     }
 
