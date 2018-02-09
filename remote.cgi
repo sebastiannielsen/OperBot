@@ -17,6 +17,10 @@ if ($command eq "GHOST") {
   $arg1 = "-";
 }
 
+if ($command eq "SETTOPIC") {
+  $arg0 = "-";
+}
+
 if (($command eq "DEFCON")||($command eq "USERCMD")) {
   $arg1 = "-";
   unless (($arg0 eq "true")||($arg0 eq "false")) {
@@ -24,7 +28,7 @@ if (($command eq "DEFCON")||($command eq "USERCMD")) {
   }
 }
 
-if (($command eq "OP")||($command eq "HALFOP")||($command eq "VOICE")||($command eq "CLRUSER")||($command eq "OPBAN")||($command eq "OPUNBAN")||($command eq "CHANSERVDEL")||($command eq "CHANSERVAOP")||($command eq "CHANSERVVOP")||($command eq "CHANSERVHOP")) {
+if (($command eq "OP")||($command eq "HALFOP")||($command eq "VOICE")||($command eq "CLRUSER")||($command eq "OPBAN")||($command eq "OPUNBAN")||($command eq "CHANSERVDEL")||($command eq "CHANSERVAOP")||($command eq "CHANSERVVOP")||($command eq "CHANSERVHOP")||($command eq "CHANSERVPRT")) {
   $arg1 = "-";
 }
 
@@ -86,6 +90,7 @@ print "<form action='remote.cgi' method='post'>";
 print "<select name='command'>";
 print "<option value='GHOST'>Ghosta m&ouml;g som missbrukar mitt nick i #laidback</option>";
 print "<option value='CHANSERVDEL'>Radera ChanServ-beh&ouml;righeter arg0=nick</option>";
+print "<option value='CHANSERVPRT'>L&auml;gg till ChanServ-skydd arg0=nick</option>";
 print "<option value='CHANSERVAOP'>L&auml;gg till ChanServ-OP arg0=nick</option>";
 print "<option value='CHANSERVHOP'>L&auml;gg till ChanServ-HalfOP arg0=nick</option>";
 print "<option value='CHANSERVVOP'>L&auml;gg till ChanServ-Voice arg0=nick</option>";
@@ -97,6 +102,7 @@ print "<option value='HALFOP'>V&auml;xla HalfOP arg0=nick</option>";
 print "<option value='OP'>V&auml;xla OP arg0=nick</option>";
 print "<option value='OPBAN'>OP-banna arg0=nick</option>";
 print "<option value='OPUNBAN'>Ta bort OP-ban arg0=nick</option>";
+print "<option value='SETTOPIC'>St&auml;ll in kanal-topic arg1=topic</option>";
 print "<option value='DEFCON'>Defcon arg0=true/false</option>";
 print "<option value='USERCMD'>Aktivera anv&auml;ndarkommandon arg0=true/false</option>";
 print "</select> ";
